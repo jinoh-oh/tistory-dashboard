@@ -11,12 +11,53 @@ box-shadow:0 8px 20px rgba(0,0,0,.08)}
 .title{font-weight:700}
 .bar{height:12px;border-radius:10px;background:#e5e7eb;overflow:hidden;margin:8px 0}
 .fill{height:100%;background:linear-gradient(90deg,#22c55e,#16a34a)}
+
+.last-update {
+  font-size: 13px;
+  color: #6b7280;
+  margin: 6px 0 18px;
+}
+
+@media (max-width: 600px) {
+  body {
+    background: #f9fafb;
+  }
+
+  .wrap {
+    padding: 16px 12px;
+  }
+
+  .card {
+    padding: 14px;
+    border-radius: 14px;
+  }
+
+  .title {
+    font-size: 15px;
+  }
+
+  .bar {
+    height: 10px;
+  }
+
+  .fill {
+    border-radius: 10px;
+  }
+
+  h2 {
+    font-size: 20px;
+  }
+}
+
 </style>
 </head>
 <body>
 <div class="wrap">
 <h2>📊 티스토리 챌린지 보드</h2>
 <div id="board"></div>
+</div>
+<div id="lastUpdate" class="last-update">
+  마지막 업데이트: 불러오는 중…
 </div>
 
 <script>
