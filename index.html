@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>티스토리 챌린지 보드</title>
+<style>
+body{font-family:system-ui;background:#f6f7fb;margin:0}
+.wrap{max-width:900px;margin:auto;padding:24px}
+.card{background:#fff;border-radius:16px;padding:16px;margin-bottom:14px;
+box-shadow:0 8px 20px rgba(0,0,0,.08)}
+.title{font-weight:700}
+.bar{height:12px;border-radius:10px;background:#e5e7eb;overflow:hidden;margin:8px 0}
+.fill{height:100%;background:linear-gradient(90deg,#22c55e,#16a34a)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h2>📊 티스토리 챌린지 보드</h2>
+<div id="board"></div>
+</div>
+
+<script>
+const API = "https://script.google.com/macros/s/AKfycbziU1KtMHlqrC5RFK3er1Tdyv2O0iLsHz6PUmnWwlQQ06MLGWf_RI-Ecu--ut2RO2fA/exec";
+
+async function load(){
+  const res = await fetch(API);
+  const data = await res.json();
+  const el = document.getElementById("board");
+  el.innerHTML = "";
+
+  data.forEach(g=>{
+    const p = g.goal ? Math.round(g.current/g.goal*100) : 0;
+    el.innerHTML += `
+      <div class="card">
+        <div class="title">${g.title}</div>
+        <div>${g.current} / ${g.goal}건 (${p}%)</div>
+        <div class="bar"><div class="fill" style="width:${p}%"></div></div>
+      </div>`;
+  });
+}
+
+load();
+setInterval(load, 180000); // 3분 자동 갱신
+</script>
+</body>
+</html>
