@@ -66,6 +66,15 @@ const API = "https://script.google.com/macros/s/AKfycbziU1KtMHlqrC5RFK3er1Tdyv2O
 async function load(){
   const res = await fetch(API);
   const data = await res.json();
+  const now = new Date();
+  const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  document.getElementById("lastUpdate").textContent =
+    "마지막 업데이트: " +
+    kst.toISOString()
+       .replace("T", " ")
+       .substring(0, 16) +
+    " (KST)";
+
   const el = document.getElementById("board");
   el.innerHTML = "";
 
