@@ -1,96 +1,619 @@
 <!doctype html>
 <html lang="ko">
 <head>
-<meta charset="utf-8">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>티스토리 챌린지 보드</title>
 <style>
-body{font-family:system-ui;background:#f6f7fb;margin:0}
-.wrap{max-width:900px;margin:auto;padding:24px}
-.card{background:#fff;border-radius:16px;padding:16px;margin-bottom:14px;
-box-shadow:0 8px 20px rgba(0,0,0,.08)}
-.title{font-weight:700}
-.bar{height:12px;border-radius:10px;background:#e5e7eb;overflow:hidden;margin:8px 0}
-.fill{height:100%;background:linear-gradient(90deg,#22c55e,#16a34a)}
+  :root{
+    --bg:#f6f8fc;
+    --card:#ffffff;
+    --text:#0f172a;
+    --muted:#64748b;
+    --line:#e6edf5;
 
-.last-update {
-  font-size: 13px;
-  color: #6b7280;
-  margin: 6px 0 18px;
-}
+    --blue:#2f7cff;
+    --cyan:#31c7d8;
+    --teal:#26c6a2;
 
-@media (max-width: 600px) {
-  body {
-    background: #f9fafb;
+    --danger-bg:#ffe9ea;
+    --danger-text:#d94c4c;
+
+    --shadow: 0 14px 40px rgba(15, 23, 42, .08);
+    --shadow-soft: 0 10px 22px rgba(15, 23, 42, .06);
+    --radius:22px;
   }
 
-  .wrap {
-    padding: 16px 12px;
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic",
+                 Segoe UI, Roboto, Helvetica, Arial, "Noto Sans KR", sans-serif;
   }
 
-  .card {
-    padding: 14px;
-    border-radius: 14px;
+  .wrap{
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 18px 14px 60px;
   }
 
-  .title {
-    font-size: 15px;
+  .topline{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    color:var(--muted);
+    font-size:13px;
+    margin-bottom:10px;
+  }
+  .topline .left{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .chip{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:8px 12px;
+    border-radius:999px;
+    background:#fff;
+    border:1px solid var(--line);
+    box-shadow: var(--shadow-soft);
+  }
+  .chip b{color:var(--text)}
+  .chip .dot{
+    width:8px;height:8px;border-radius:50%;
+    background:var(--blue);
   }
 
-  .bar {
-    height: 10px;
+  .alert{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding:14px 14px;
+    border-radius:16px;
+    background:var(--danger-bg);
+    border:1px solid rgba(217,76,76,.25);
+    color:var(--danger-text);
+    margin: 10px 0 12px;
+  }
+  .alert .msg{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-weight:700;
+    letter-spacing:-.2px;
+  }
+  .alert .msg .icon{
+    width:18px;height:18px;border-radius:50%;
+    display:inline-flex;align-items:center;justify-content:center;
+    border:2px solid rgba(217,76,76,.5);
+    font-size:12px;
+  }
+  .alert a{
+    color:var(--danger-text);
+    font-weight:800;
+    text-decoration:none;
+    padding:8px 10px;
+    border-radius:999px;
+    background: rgba(255,255,255,.7);
+    border:1px solid rgba(217,76,76,.15);
   }
 
-  .fill {
-    border-radius: 10px;
+  .tabs{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    justify-content:center;
+    margin: 10px 0 16px;
+  }
+  .tab{
+    width:44px; height:44px;
+    border-radius:14px;
+    background:#fff;
+    border:1px solid var(--line);
+    box-shadow: var(--shadow-soft);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:4px;
+    cursor:pointer;
+    user-select:none;
+  }
+  .tab .flame{font-size:18px; line-height:1}
+  .tab .label{font-size:12px; color:var(--muted); font-weight:700}
+  .tab.active{
+    border-color: rgba(49,199,216,.6);
+    box-shadow: 0 12px 26px rgba(49,199,216,.20);
+  }
+  .tab.active .label{color: #0ea5b7}
+  .tab.muted{
+    opacity:.45;
   }
 
-  h2 {
-    font-size: 20px;
+  .hero{
+    background: var(--card);
+    border:1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 18px 16px 16px;
   }
-}
 
+  .heroHead{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom:12px;
+  }
+  .navBtn{
+    width:38px;height:38px;border-radius:12px;
+    border:1px solid var(--line);
+    background:#fff;
+    display:flex;align-items:center;justify-content:center;
+    color:var(--muted);
+    cursor:pointer;
+  }
+
+  .heroTitle{
+    text-align:center;
+    flex:1;
+  }
+  .heroTitle h2{
+    margin:0;
+    font-size:26px;
+    letter-spacing:-.4px;
+  }
+  .heroTitle .sub{
+    margin-top:6px;
+    color:var(--muted);
+    font-size:13px;
+  }
+  .badgeSmall{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    padding:6px 10px;
+    border-radius:999px;
+    background: rgba(47,124,255,.08);
+    border:1px solid rgba(47,124,255,.18);
+    color:#1d4ed8;
+    font-size:12px;
+    font-weight:800;
+    margin-left:8px;
+  }
+
+  .ringRow{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding: 10px 0 6px;
+  }
+
+  .ring{
+    --p: 0; /* percent 0~100 */
+    width: 170px;
+    height: 170px;
+    border-radius: 50%;
+    background:
+      conic-gradient(#ff9a3c calc(var(--p) * 1%), #e9eef6 0);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    position:relative;
+  }
+  .ring::after{
+    content:"";
+    width: 132px;
+    height: 132px;
+    background: #fff;
+    border-radius:50%;
+    position:absolute;
+    box-shadow: inset 0 0 0 1px var(--line);
+  }
+  .ringInner{
+    position:relative;
+    z-index:2;
+    text-align:center;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:8px;
+  }
+  .ringInner .flame{
+    font-size:46px;
+    line-height:1;
+  }
+  .ringInner .count{
+    font-size:28px;
+    font-weight:900;
+    letter-spacing:-.4px;
+  }
+  .ringInner .mini{
+    font-size:12px;
+    color:var(--muted);
+    font-weight:700;
+    padding:6px 10px;
+    border-radius:999px;
+    background: #f1f5f9;
+    border: 1px solid var(--line);
+  }
+
+  .segBar{
+    display:flex;
+    gap:8px;
+    align-items:center;
+    justify-content:center;
+    margin: 10px 0 8px;
+  }
+  .seg{
+    width:44px;
+    height:8px;
+    border-radius:999px;
+    background:#e9eef6;
+    overflow:hidden;
+  }
+  .seg .fill{
+    height:100%;
+    width:0%;
+    background: linear-gradient(90deg, #ff9a3c, #ff6a3c);
+    border-radius:999px;
+    transition: width .4s ease;
+  }
+
+  .heroFoot{
+    border-top:1px solid var(--line);
+    padding-top:12px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .pill{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    background: #e8f7ff;
+    border:1px solid rgba(49,199,216,.25);
+    color:#0f172a;
+    padding:10px 12px;
+    border-radius:999px;
+    font-size:13px;
+    font-weight:800;
+    box-shadow: var(--shadow-soft);
+  }
+  .pill .pct{
+    background: #0ea5b7;
+    color:#fff;
+    padding:6px 10px;
+    border-radius:999px;
+    font-weight:900;
+  }
+
+  .lastUpdate{
+    text-align:center;
+    margin-top:12px;
+    color:var(--muted);
+    font-size:12px;
+  }
+
+  .grid{
+    margin-top: 14px;
+    display:grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 12px;
+  }
+  .card{
+    grid-column: span 6;
+    background: var(--card);
+    border:1px solid var(--line);
+    border-radius: 18px;
+    box-shadow: var(--shadow-soft);
+    padding: 14px 14px 12px;
+  }
+  .cardTop{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:10px;
+    margin-bottom:10px;
+  }
+  .cardTop .name{
+    font-weight:900;
+    letter-spacing:-.2px;
+    font-size:15px;
+  }
+  .tag{
+    font-size:12px;
+    font-weight:900;
+    padding:6px 10px;
+    border-radius:999px;
+    border:1px solid var(--line);
+    color:var(--muted);
+    background:#fff;
+    white-space:nowrap;
+  }
+  .tag.done{
+    background: rgba(38,198,162,.10);
+    border-color: rgba(38,198,162,.25);
+    color:#0f766e;
+  }
+  .tag.doing{
+    background: rgba(245,158,11,.10);
+    border-color: rgba(245,158,11,.25);
+    color:#a16207;
+  }
+  .row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    color:var(--muted);
+    font-size:12.5px;
+    margin-bottom:8px;
+  }
+  .row b{color:var(--text)}
+  .barWrap{
+    height:10px;
+    background:#e9eef6;
+    border-radius:999px;
+    overflow:hidden;
+    border:1px solid #e6edf5;
+  }
+  .bar{
+    height:100%;
+    width:0%;
+    border-radius:999px;
+    background: linear-gradient(90deg, var(--cyan), var(--teal));
+    transition: width .5s ease;
+  }
+  .bar.low{ background: linear-gradient(90deg, #ff5a5f, #ff9a3c); }
+  .bar.mid{ background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+
+  /* 모바일 최적화 */
+  @media (max-width: 720px){
+    .card{ grid-column: span 12; }
+  }
+  @media (max-width: 520px){
+    .wrap{ padding: 14px 10px 50px; }
+    .heroTitle h2{ font-size: 22px; }
+    .ring{ width: 155px; height: 155px; }
+    .ring::after{ width: 120px; height: 120px; }
+    .ringInner .flame{ font-size: 42px; }
+    .ringInner .count{ font-size: 26px; }
+    .tab{ width:42px; height:42px; border-radius:14px; }
+  }
 </style>
 </head>
+
 <body>
-<div class="wrap">
-<h2>📊 티스토리 챌린지 보드</h2>
-<div id="board"></div>
-</div>
-<div id="lastUpdate" class="last-update">
-  마지막 업데이트: 불러오는 중…
-</div>
+  <div class="wrap">
+    <div class="topline">
+      <div class="left">
+        <span class="chip"><span class="dot"></span> <b id="periodText">12.1 - 12.21</b></span>
+        <span class="chip">제출 마감 <b id="deadlineText">12.22</b></span>
+      </div>
+      <div class="right"></div>
+    </div>
+
+    <div class="alert" id="alertBox" style="display:none;">
+      <div class="msg">
+        <span class="icon">!</span>
+        <span id="alertMsg">부족</span>
+      </div>
+      <a href="#" onclick="return false;">채우기 →</a>
+    </div>
+
+    <div class="tabs" id="tabs">
+      <div class="tab active" data-week="1">
+        <div class="flame">🔥</div>
+        <div class="label">1주</div>
+      </div>
+      <div class="tab" data-week="2">
+        <div class="flame">🔥</div>
+        <div class="label">2주</div>
+      </div>
+      <div class="tab muted" data-week="3">
+        <div class="flame">🔥</div>
+        <div class="label">3주</div>
+      </div>
+    </div>
+
+    <section class="hero">
+      <div class="heroHead">
+        <div class="navBtn" aria-hidden="true">‹</div>
+        <div class="heroTitle">
+          <h2>
+            전체 진행
+            <span class="badgeSmall" id="weekBadge">이번 주차</span>
+          </h2>
+          <div class="sub" id="rangeText">자동 집계 (Posts DB → Goals DB)</div>
+        </div>
+        <div class="navBtn" aria-hidden="true">›</div>
+      </div>
+
+      <div class="ringRow">
+        <div class="ring" id="ring" style="--p:0;">
+          <div class="ringInner">
+            <div class="flame">🔥</div>
+            <div class="count"><span id="curAll">0</span> / <span id="goalAll">0</span></div>
+            <div class="mini" id="miniText">시작이 반이다 🏃</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="segBar" aria-hidden="true">
+        <div class="seg"><div class="fill" id="seg1"></div></div>
+        <div class="seg"><div class="fill" id="seg2"></div></div>
+        <div class="seg"><div class="fill" id="seg3"></div></div>
+      </div>
+
+      <div class="heroFoot">
+        <div class="pill">
+          <span id="pillText">이번 주 목표 중 0건이 목표 달성!</span>
+          <span class="pct" id="pillPct">0%</span>
+        </div>
+      </div>
+
+      <div class="lastUpdate" id="lastUpdate">마지막 업데이트: 불러오는 중…</div>
+    </section>
+
+    <section class="grid" id="grid"></section>
+  </div>
 
 <script>
-const API = "https://script.google.com/macros/s/AKfycbziU1KtMHlqrC5RFK3er1Tdyv2O0iLsHz6PUmnWwlQQ06MLGWf_RI-Ecu--ut2RO2fA/exec";
+  // ✅ 여기에 Apps Script 웹앱 URL 넣기 (…/exec)
+  const API_URL = "https://script.google.com/macros/s/AKfycbziU1KtMHlqrC5RFK3er1Tdyv2O0iLsHz6PUmnWwlQQ06MLGWf_RI-Ecu--ut2RO2fA/exec";
 
-async function load(){
-  const res = await fetch(API);
-  const data = await res.json();
-  const now = new Date();
-  const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
-  document.getElementById("lastUpdate").textContent =
-    "마지막 업데이트: " +
-    kst.toISOString()
-       .replace("T", " ")
-       .substring(0, 16) +
-    " (KST)";
+  // 3분 자동 갱신
+  const REFRESH_MS = 180000;
 
-  const el = document.getElementById("board");
-  el.innerHTML = "";
+  function fmtKST(isoDate){
+    // isoDate: Date 객체
+    const now = isoDate;
+    const kst = new Date(now.getTime() + 9*60*60*1000);
+    const s = kst.toISOString().replace("T"," ").substring(0,16);
+    return s + " (KST)";
+  }
 
-  data.forEach(g=>{
-    const p = g.goal ? Math.round(g.current/g.goal*100) : 0;
-    el.innerHTML += `
-      <div class="card">
-        <div class="title">${g.title}</div>
-        <div>${g.current} / ${g.goal}건 (${p}%)</div>
-        <div class="bar"><div class="fill" style="width:${p}%"></div></div>
-      </div>`;
+  function percent(cur, goal){
+    if (!goal || goal <= 0) return 0;
+    return Math.max(0, Math.min(100, Math.round((cur/goal)*100)));
+  }
+
+  function statusTag(p){
+    if (p >= 100) return {text:"달성", cls:"done"};
+    if (p > 0) return {text:"진행중", cls:"doing"};
+    return {text:"대기", cls:""};
+  }
+
+  function setBarColor(barEl, p){
+    barEl.classList.remove("low","mid");
+    if (p < 30) barEl.classList.add("low");
+    else if (p < 70) barEl.classList.add("mid");
+  }
+
+  function setHeroTexts(p){
+    const mini = document.getElementById("miniText");
+    if (p >= 100) mini.textContent = "완주 성공! 🎉";
+    else if (p >= 70) mini.textContent = "거의 다 왔다 💪";
+    else if (p >= 30) mini.textContent = "페이스 좋아요 🙂";
+    else if (p > 0) mini.textContent = "시작이 반이다 🏃";
+    else mini.textContent = "오늘부터 시작 🔥";
+  }
+
+  function render(goals){
+    // 표시 순서
+    const order = ["T1","OH","Coffee","RINA","ALL"];
+    goals.sort((a,b)=> order.indexOf(a.code) - order.indexOf(b.code));
+
+    // ALL 찾기
+    const all = goals.find(g => g.code === "ALL") || {current:0, goal:0, title:"전체"};
+    const pAll = percent(all.current, all.goal);
+
+    // Hero 반영
+    document.getElementById("curAll").textContent = String(all.current ?? 0);
+    document.getElementById("goalAll").textContent = String(all.goal ?? 0);
+    document.getElementById("ring").style.setProperty("--p", pAll);
+    setHeroTexts(pAll);
+
+    // 세그(3칸) - 보기용: 33%씩 채움
+    const seg1 = document.getElementById("seg1");
+    const seg2 = document.getElementById("seg2");
+    const seg3 = document.getElementById("seg3");
+    seg1.style.width = Math.max(0, Math.min(100, (pAll/33)*100)) + "%";
+    seg2.style.width = Math.max(0, Math.min(100, ((pAll-33)/33)*100)) + "%";
+    seg3.style.width = Math.max(0, Math.min(100, ((pAll-66)/34)*100)) + "%";
+
+    // 경고바: 전체 목표 기준으로 "부족" 계산
+    const remaining = Math.max(0, (all.goal || 0) - (all.current || 0));
+    const alertBox = document.getElementById("alertBox");
+    const alertMsg = document.getElementById("alertMsg");
+    if ((all.goal || 0) > 0 && remaining > 0){
+      alertBox.style.display = "flex";
+      alertMsg.textContent = "전체 목표 " + remaining + "건 부족";
+    } else {
+      alertBox.style.display = "none";
+    }
+
+    // 아래 카드: ALL 제외하고 블로그 카드 표시
+    const grid = document.getElementById("grid");
+    grid.innerHTML = "";
+
+    const blogCards = goals.filter(g => g.code !== "ALL");
+
+    // “목표 달성” 개수(블로그별 카드 중 목표 달성한 것)
+    const doneCount = blogCards.filter(g => percent(g.current, g.goal) >= 100).length;
+    document.getElementById("pillText").textContent =
+      "블로그 목표 중 " + doneCount + "개가 목표 달성!";
+    document.getElementById("pillPct").textContent = pAll + "%";
+
+    blogCards.forEach(g=>{
+      const p = percent(g.current, g.goal);
+      const tag = statusTag(p);
+
+      const card = document.createElement("article");
+      card.className = "card";
+
+      card.innerHTML = `
+        <div class="cardTop">
+          <div class="name">${escapeHtml(g.title || g.code)}</div>
+          <div class="tag ${tag.cls}">${tag.text}</div>
+        </div>
+        <div class="row">
+          <div>진행도: <b>${Number(g.current||0)} / ${Number(g.goal||0)}건</b></div>
+          <div>달성률: <b>${p}%</b></div>
+        </div>
+        <div class="barWrap"><div class="bar"></div></div>
+      `;
+
+      const bar = card.querySelector(".bar");
+      bar.style.width = p + "%";
+      setBarColor(bar, p);
+
+      grid.appendChild(card);
+    });
+  }
+
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, s => ({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+    }[s]));
+  }
+
+  async function load(){
+    try{
+      const res = await fetch(API_URL, { cache: "no-store" });
+      const goals = await res.json();
+
+      render(goals);
+
+      document.getElementById("lastUpdate").textContent =
+        "마지막 업데이트: " + fmtKST(new Date());
+    } catch(e){
+      document.getElementById("lastUpdate").textContent =
+        "마지막 업데이트: 오류(연결 확인 필요)";
+      console.error(e);
+    }
+  }
+
+  // 탭 UI(보기용)
+  document.getElementById("tabs").addEventListener("click", (e)=>{
+    const tab = e.target.closest(".tab");
+    if (!tab || tab.classList.contains("muted")) return;
+    document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+    tab.classList.add("active");
+    const wk = tab.dataset.week;
+    document.getElementById("weekBadge").textContent = (wk === "1") ? "이번 주차" : (wk + "주차");
   });
-}
 
-load();
-setInterval(load, 180000); // 3분 자동 갱신
+  load();
+  setInterval(load, REFRESH_MS);
 </script>
 </body>
 </html>
