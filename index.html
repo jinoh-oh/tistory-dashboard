@@ -86,7 +86,7 @@
     display:flex;
     align-items:center;
     gap:10px;
-    font-weight:700;
+    font-weight:800;
     letter-spacing:-.2px;
   }
   .alert .msg .icon{
@@ -97,7 +97,7 @@
   }
   .alert a{
     color:var(--danger-text);
-    font-weight:800;
+    font-weight:900;
     text-decoration:none;
     padding:8px 10px;
     border-radius:999px;
@@ -127,15 +127,13 @@
     user-select:none;
   }
   .tab .flame{font-size:18px; line-height:1}
-  .tab .label{font-size:12px; color:var(--muted); font-weight:700}
+  .tab .label{font-size:12px; color:var(--muted); font-weight:800}
   .tab.active{
     border-color: rgba(49,199,216,.6);
     box-shadow: 0 12px 26px rgba(49,199,216,.20);
   }
   .tab.active .label{color: #0ea5b7}
-  .tab.muted{
-    opacity:.45;
-  }
+  .tab.muted{ opacity:.45; }
 
   .hero{
     background: var(--card);
@@ -158,7 +156,7 @@
     background:#fff;
     display:flex;align-items:center;justify-content:center;
     color:var(--muted);
-    cursor:pointer;
+    cursor:default;
   }
 
   .heroTitle{
@@ -185,7 +183,7 @@
     border:1px solid rgba(47,124,255,.18);
     color:#1d4ed8;
     font-size:12px;
-    font-weight:800;
+    font-weight:900;
     margin-left:8px;
   }
 
@@ -232,13 +230,13 @@
   }
   .ringInner .count{
     font-size:28px;
-    font-weight:900;
+    font-weight:950;
     letter-spacing:-.4px;
   }
   .ringInner .mini{
     font-size:12px;
     color:var(--muted);
-    font-weight:700;
+    font-weight:800;
     padding:6px 10px;
     border-radius:999px;
     background: #f1f5f9;
@@ -284,7 +282,7 @@
     padding:10px 12px;
     border-radius:999px;
     font-size:13px;
-    font-weight:800;
+    font-weight:900;
     box-shadow: var(--shadow-soft);
   }
   .pill .pct{
@@ -292,7 +290,7 @@
     color:#fff;
     padding:6px 10px;
     border-radius:999px;
-    font-weight:900;
+    font-weight:950;
   }
 
   .lastUpdate{
@@ -324,13 +322,13 @@
     margin-bottom:10px;
   }
   .cardTop .name{
-    font-weight:900;
+    font-weight:950;
     letter-spacing:-.2px;
     font-size:15px;
   }
   .tag{
     font-size:12px;
-    font-weight:900;
+    font-weight:950;
     padding:6px 10px;
     border-radius:999px;
     border:1px solid var(--line);
@@ -375,7 +373,7 @@
   .bar.low{ background: linear-gradient(90deg, #ff5a5f, #ff9a3c); }
   .bar.mid{ background: linear-gradient(90deg, #f59e0b, #fbbf24); }
 
-  /* 모바일 최적화 */
+  /* 모바일 */
   @media (max-width: 720px){
     .card{ grid-column: span 12; }
   }
@@ -395,20 +393,21 @@
   <div class="wrap">
     <div class="topline">
       <div class="left">
-        <span class="chip"><span class="dot"></span> <b id="periodText">1.1 - 12.31</b></span>
-        <span class="chip">포스팅 목표 <b id="deadlineText">1,000건</b></span>
+        <span class="chip"><span class="dot"></span> <b id="periodText">이번 주</b></span>
+        <span class="chip">주간 목표 <b id="weeklyGoalText">3건</b></span>
       </div>
-      <div class="right"></div>
     </div>
 
+    <!-- 주간 부족 알림 (실제 데이터 기준) -->
     <div class="alert" id="alertBox" style="display:none;">
       <div class="msg">
         <span class="icon">!</span>
-        <span id="alertMsg">부족</span>
+        <span id="alertMsg">이번 주 부족</span>
       </div>
       <a href="#" onclick="return false;">채우기 →</a>
     </div>
 
+    <!-- 탭(시각용) -->
     <div class="tabs" id="tabs">
       <div class="tab active" data-week="1">
         <div class="flame">🔥</div>
@@ -424,15 +423,16 @@
       </div>
     </div>
 
+    <!-- HERO: 이번 주 진행 (실제 데이터 기준) -->
     <section class="hero">
       <div class="heroHead">
         <div class="navBtn" aria-hidden="true">‹</div>
         <div class="heroTitle">
           <h2>
-            전체 진행
+            이번 주 진행
             <span class="badgeSmall" id="weekBadge">이번 주차</span>
           </h2>
-          <div class="sub" id="rangeText">자동 집계 (Posts DB → Goals DB)</div>
+          <div class="sub" id="rangeText">작성일 기준(월~일, KST) · Posts DB 집계</div>
         </div>
         <div class="navBtn" aria-hidden="true">›</div>
       </div>
@@ -441,7 +441,7 @@
         <div class="ring" id="ring" style="--p:0;">
           <div class="ringInner">
             <div class="flame">🔥</div>
-            <div class="count"><span id="curAll">0</span> / <span id="goalAll">0</span></div>
+            <div class="count"><span id="curWeek">0</span> / <span id="goalWeek">3</span></div>
             <div class="mini" id="miniText">시작이 반이다 🏃</div>
           </div>
         </div>
@@ -455,7 +455,7 @@
 
       <div class="heroFoot">
         <div class="pill">
-          <span id="pillText">이번 주 목표 중 0건이 목표 달성!</span>
+          <span id="pillText">이번 주 목표 3건 중 0건 달성!</span>
           <span class="pct" id="pillPct">0%</span>
         </div>
       </div>
@@ -463,25 +463,23 @@
       <div class="lastUpdate" id="lastUpdate">마지막 업데이트: 불러오는 중…</div>
     </section>
 
+    <!-- 아래 카드: 누적 목표(Goals DB) 기준 -->
     <section class="grid" id="grid"></section>
   </div>
 
 <script>
   // ✅ 여기에 Apps Script 웹앱 URL 넣기 (…/exec)
-  const API_URL = "https://script.google.com/macros/s/AKfycbziU1KtMHlqrC5RFK3er1Tdyv2O0iLsHz6PUmnWwlQQ06MLGWf_RI-Ecu--ut2RO2fA/exec";
+  const API_URL = "https://script.google.com/macros/s/AKfycbxFbnv_ereDU2c2-y3u6GdEi9ZRBeshfzxZFJUrnM7mJYMe9i-EICjBNnsbO48SrBz_/exec";
 
   // 3분 자동 갱신
   const REFRESH_MS = 180000;
 
-  function fmtKST(isoDate){
-    // isoDate: Date 객체
-    const now = isoDate;
-    const kst = new Date(now.getTime() + 9*60*60*1000);
-    const s = kst.toISOString().replace("T"," ").substring(0,16);
-    return s + " (KST)";
+  function fmtKST(dateObj){
+    const kst = new Date(dateObj.getTime() + 9*60*60*1000);
+    return kst.toISOString().replace("T"," ").substring(0,16) + " (KST)";
   }
 
-  function percent(cur, goal){
+  function clampPercent(cur, goal){
     if (!goal || goal <= 0) return 0;
     return Math.max(0, Math.min(100, Math.round((cur/goal)*100)));
   }
@@ -498,75 +496,85 @@
     else if (p < 70) barEl.classList.add("mid");
   }
 
-  function setHeroTexts(p){
+  function setHeroMini(p){
     const mini = document.getElementById("miniText");
-    if (p >= 100) mini.textContent = "완주 성공! 🎉";
+    if (p >= 100) mini.textContent = "이번 주 목표 달성! 🎉";
     else if (p >= 70) mini.textContent = "거의 다 왔다 💪";
     else if (p >= 30) mini.textContent = "페이스 좋아요 🙂";
     else if (p > 0) mini.textContent = "시작이 반이다 🏃";
     else mini.textContent = "오늘부터 시작 🔥";
   }
 
-  function render(goals){
-    // 표시 순서
-    const order = ["T1","OH","Coffee","RINA","ALL"];
-    goals.sort((a,b)=> order.indexOf(a.code) - order.indexOf(b.code));
-
-    // ALL 찾기
-    const all = goals.find(g => g.code === "ALL") || {current:0, goal:0, title:"전체"};
-    const pAll = percent(all.current, all.goal);
-
-    // Hero 반영
-    document.getElementById("curAll").textContent = String(all.current ?? 0);
-    document.getElementById("goalAll").textContent = String(all.goal ?? 0);
-    document.getElementById("ring").style.setProperty("--p", pAll);
-    setHeroTexts(pAll);
-
-    // 세그(3칸) - 보기용: 33%씩 채움
+  function setSegBars(p){
+    // 3칸 진행바(보기용): 0~33 / 33~66 / 66~100
     const seg1 = document.getElementById("seg1");
     const seg2 = document.getElementById("seg2");
     const seg3 = document.getElementById("seg3");
-    seg1.style.width = Math.max(0, Math.min(100, (pAll/33)*100)) + "%";
-    seg2.style.width = Math.max(0, Math.min(100, ((pAll-33)/33)*100)) + "%";
-    seg3.style.width = Math.max(0, Math.min(100, ((pAll-66)/34)*100)) + "%";
 
-    // 경고바: 전체 목표 기준으로 "부족" 계산
-    const remaining = Math.max(0, (all.goal || 0) - (all.current || 0));
+    seg1.style.width = Math.max(0, Math.min(100, (p/33)*100)) + "%";
+    seg2.style.width = Math.max(0, Math.min(100, ((p-33)/33)*100)) + "%";
+    seg3.style.width = Math.max(0, Math.min(100, ((p-66)/34)*100)) + "%";
+  }
+
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, s => ({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+    }[s]));
+  }
+
+  function renderAll(data){
+    // data = { goals: [...], weekly: {count, goal, percent, remain} }
+    const goals = Array.isArray(data.goals) ? data.goals : [];
+    const weekly = data.weekly || {count:0, goal:3, percent:0, remain:3};
+
+    // ===== 주간 영역(실제 데이터 기준) =====
+    document.getElementById("weeklyGoalText").textContent = (weekly.goal ?? 3) + "건";
+    document.getElementById("curWeek").textContent = String(weekly.count ?? 0);
+    document.getElementById("goalWeek").textContent = String(weekly.goal ?? 3);
+
+    const pW = Math.max(0, Math.min(100, Number(weekly.percent ?? 0)));
+    document.getElementById("ring").style.setProperty("--p", pW);
+    setHeroMini(pW);
+    setSegBars(pW);
+
+    // 말풍선(주간 목표 달성 문구)
+    document.getElementById("pillText").textContent =
+      "이번 주 목표 " + (weekly.goal ?? 3) + "건 중 " + (weekly.count ?? 0) + "건 달성!";
+    document.getElementById("pillPct").textContent = pW + "%";
+
+    // 주간 부족 알림(경고바)
     const alertBox = document.getElementById("alertBox");
     const alertMsg = document.getElementById("alertMsg");
-    if ((all.goal || 0) > 0 && remaining > 0){
+    if ((weekly.remain ?? 0) > 0){
       alertBox.style.display = "flex";
-      alertMsg.textContent = "전체 목표 " + remaining + "건 부족";
+      alertMsg.textContent = "이번 주 " + weekly.remain + "건 부족";
     } else {
       alertBox.style.display = "none";
     }
 
-    // 아래 카드: ALL 제외하고 블로그 카드 표시
+    // ===== 아래 카드(누적 목표 기준) =====
+    const order = ["T1","OH","Coffee","RINA","ALL"];
+    goals.sort((a,b)=> order.indexOf(a.code) - order.indexOf(b.code));
+
     const grid = document.getElementById("grid");
     grid.innerHTML = "";
 
-    const blogCards = goals.filter(g => g.code !== "ALL");
+    // ALL은 카드에서는 선택(보이게 해도 되고 빼도 됨)
+    const cards = goals.filter(g => g.code && g.code !== "ALL");
 
-    // “목표 달성” 개수(블로그별 카드 중 목표 달성한 것)
-    const doneCount = blogCards.filter(g => percent(g.current, g.goal) >= 100).length;
-    document.getElementById("pillText").textContent =
-      "블로그 목표 중 " + doneCount + "개가 목표 달성!";
-    document.getElementById("pillPct").textContent = pAll + "%";
-
-    blogCards.forEach(g=>{
-      const p = percent(g.current, g.goal);
+    cards.forEach(g=>{
+      const p = clampPercent(Number(g.current||0), Number(g.goal||0));
       const tag = statusTag(p);
 
       const card = document.createElement("article");
       card.className = "card";
-
       card.innerHTML = `
         <div class="cardTop">
           <div class="name">${escapeHtml(g.title || g.code)}</div>
           <div class="tag ${tag.cls}">${tag.text}</div>
         </div>
         <div class="row">
-          <div>진행도: <b>${Number(g.current||0)} / ${Number(g.goal||0)}건</b></div>
+          <div>누적 진행: <b>${Number(g.current||0)} / ${Number(g.goal||0)}건</b></div>
           <div>달성률: <b>${p}%</b></div>
         </div>
         <div class="barWrap"><div class="bar"></div></div>
@@ -580,24 +588,19 @@
     });
   }
 
-  function escapeHtml(str){
-    return String(str).replace(/[&<>"']/g, s => ({
-      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-    }[s]));
-  }
-
   async function load(){
     try{
       const res = await fetch(API_URL, { cache: "no-store" });
-      const goals = await res.json();
+      const data = await res.json();
 
-      render(goals);
+      // ✅ 반드시 {goals, weekly} 형태여야 함
+      renderAll(data);
 
       document.getElementById("lastUpdate").textContent =
         "마지막 업데이트: " + fmtKST(new Date());
     } catch(e){
       document.getElementById("lastUpdate").textContent =
-        "마지막 업데이트: 오류(연결 확인 필요)";
+        "마지막 업데이트: 오류(연결/응답 형식 확인 필요)";
       console.error(e);
     }
   }
@@ -617,4 +620,5 @@
 </script>
 </body>
 </html>
+
 
