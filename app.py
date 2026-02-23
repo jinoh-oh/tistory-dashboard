@@ -13,22 +13,34 @@ st.set_page_config(
     layout="wide"
 )
 
-def get_word_count(html_content):
+def get_word_count_details(html_content):
     """
-    Counts characters excluding HTML tags.
+    Returns a dictionary with various word count details.
     """
-    # Remove HTML tags using regex
+    # Remove HTML tags
     clean_text = re.sub(r'<[^>]+>', '', html_content)
-    # Remove extra whitespaces
-    clean_text = " ".join(clean_text.split())
-    return len(clean_text)
+    
+    # Total characters (including spaces)
+    total_with_spaces = len(clean_text)
+    
+    # Characters excluding whitespaces
+    total_no_spaces = len(re.sub(r'\s+', '', clean_text))
+    
+    # Korean characters only (Hangul syllables/jamo)
+    korean_only = len(re.findall(r'[가-힣ㄱ-ㅎㅏ-ㅣ]', clean_text))
+    
+    return {
+        "total_no_spaces": total_no_spaces,
+        "korean_only": korean_only,
+        "total_with_spaces": total_with_spaces
+    }
 
 def generate_blog_post(topic, prompt_template):
     """
     Orchestrates the blog generation process.
     """
     # 1. Generate Content
-    with st.spinner('🤖 AI가 글을 작성하고 있습니다... (약 10-20초 소요)'):
+    with st.spinner('🤖 AI가 글을 작성하고 있습니다...'):
         content_gen = ContentGenerator()
         blog_data = content_gen.generate_blog_post(topic, prompt_template)
     
@@ -37,14 +49,14 @@ def generate_blog_post(topic, prompt_template):
         return None
 
     # 2. Generate Image
-    with st.spinner('🎨 썸네일 이미지를 생성하고 있습니다...'):
+    with st.spinner('🎨 AI가 주제와 관련된 이미지를 생성하고 있습니다...'):
         output_dir = os.path.join("output", "streamlit_generated")
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
             
         image_gen = ImageGenerator(output_dir=output_dir)
         try:
-            # Modified to disable text overlay as requested
+            # Pass image_prompt to the generator
             image_path = image_gen.generate_image(blog_data['title'], blog_data.get('image_prompt'), include_text=False)
         except Exception as e:
             st.error(f"이미지 생성 실패: {e}")
@@ -55,21 +67,25 @@ def generate_blog_post(topic, prompt_template):
 def main():
     st.title("✍️ 티스토리 블로그 자동생성기")
     st.markdown("""
-    구글 Gemini AI를 활용하여 블로그 주제만 입력하면 **제목, 본문(HTML), 썸네일**을 자동으로 만들어줍니다.
+    구글 Gemini AI를 활용하여 블로그 주제만 입력하면 **제목, 본문(HTML), 최적화된 이미지**를 자동으로 만들어줍니다.
     """)
 
     # Initialize session state
     if 'generated' not in st.session_state:
         st.session_state['generated'] = False
+    if 'fact_checked' not in st.session_state:
+        st.session_state['fact_checked'] = False
+    if 'spell_checked' not in st.session_state:
+        st.session_state['spell_checked'] = False
 
     # Sidebar for Config Check
     with st.sidebar:
-        st.header("설정 상태")
+        st.header("⚙️ 설정 및 도구")
         if config.GEMINI_API_KEY:
-            st.success("✅ Gemini API Key 연동됨")
+            st.success("✅ Gemini API 연결됨")
         else:
-            st.error("❌ Gemini API Key 없음")
-            st.info(".env 파일에 키를 입력해주세요.")
+            st.error("❌ API Key 필요")
+            st.info(".env 파일 또는 Secrets에 키를 입력해주세요.")
             
         st.divider()
         st.header("📝 서식 선택")
@@ -78,35 +94,35 @@ def main():
             ("수익형 HTML 템플릿 (코드 복붙용)", "수익형 블로그 규칙 (가이드라인)")
         )
         
-        # Load default template based on choice
         if template_choice == "수익형 HTML 템플릿 (코드 복붙용)":
             default_template = templates.TEMPLATE_HTML
         else:
             default_template = templates.TEMPLATE_BASIC
         
         st.divider()
-        st.header("🛠️ 특수 기능")
-        st.info("글 생성 후에 아래 버튼을 사용하여 내용을 보완할 수 있습니다.")
+        st.write("💡 **팁**: 글 생성 후에 상단 버튼으로 내용을 한층 더 다듬을 수 있습니다.")
 
-    # Template Editor (Collapsible)
+    # Template Editor
     with st.expander("🛠️ 서식(프롬프트) 직접 수정하기", expanded=False):
-        st.info("AI에게 전달될 지침(프롬프트)입니다. 필요하다면 내용을 직접 수정해서 사용할 수 있습니다.")
         user_template = st.text_area("프롬프트 내용", value=default_template, height=300)
 
     # Input Area
     st.divider()
-    topic = st.text_input("블로그 주제를 입력하세요", placeholder="예: 2024년 해외여행 추천지, 다이어트 식단 가이드")
+    topic = st.text_input("블로그 주제를 입력하세요", placeholder="예: 2026년 해외여행 추천지, 다이어트 식단 가이드")
     
-    if st.button("🚀 글 생성하기", type="primary"):
+    if st.button("🚀 블로그 글 생성 시작", type="primary"):
         if not topic:
             st.warning("주제를 입력해주세요.")
             return
 
         if not config.GEMINI_API_KEY:
-            st.error("API Key가 설정되지 않았습니다. 사이드바를 확인하세요.")
+            st.error("API Key 설정이 필요합니다.")
             return
 
-        # Run Generation
+        # Reset states for new post
+        st.session_state['fact_checked'] = False
+        st.session_state['spell_checked'] = False
+
         result = generate_blog_post(topic, user_template)
         
         if result:
@@ -125,81 +141,97 @@ def main():
         image_path = st.session_state['image_path']
         current_topic = st.session_state.get('topic', topic)
 
-        # Refinement Actions
-        col_act1, col_act2, col_act3 = st.columns(3)
+        # Action Area
+        act_col1, act_col2 = st.columns([2, 1])
         
-        with col_act1:
-            if st.button("🔍 최신 정보 검증 및 보완", use_container_width=True):
-                with st.spinner("최신 정보를 확인 중입니다..."):
-                    content_gen = ContentGenerator()
-                    new_content = content_gen.verify_and_rewrite(blog_data['content'], current_topic)
-                    if new_content:
-                        st.session_state['blog_data']['content'] = new_content
-                        st.success("정보 검증 및 보완 완료!")
-                        st.rerun()
+        with act_col1:
+            b_col1, b_col2 = st.columns(2)
+            with b_col1:
+                btn_label = "🔍 최신 정보 검증 및 보완"
+                if st.session_state['fact_checked']:
+                    btn_label += " (✅ 완료)"
+                
+                if st.button(btn_label, key="fact_check_btn", use_container_width=True):
+                    with st.spinner("최신 정보를 확인하고 내용을 보강 중입니다..."):
+                        content_gen = ContentGenerator()
+                        new_content = content_gen.verify_and_rewrite(blog_data['content'], current_topic)
+                        if new_content:
+                            st.session_state['blog_data']['content'] = new_content
+                            st.session_state['fact_checked'] = True
+                            st.success("정보 보완이 완료되었습니다!")
+                            st.rerun()
 
-        with col_act2:
-            if st.button("✍️ 맞춤법 검사 및 교정", use_container_width=True):
-                with st.spinner("맞춤법을 교정 중입니다..."):
-                    content_gen = ContentGenerator()
-                    new_content = content_gen.spell_check_and_refine(blog_data['content'])
-                    if new_content:
-                        st.session_state['blog_data']['content'] = new_content
-                        st.success("맞춤법 및 문장 교정 완료!")
-                        st.rerun()
+            with b_col2:
+                btn_label = "✍️ 맞춤법 검사 및 교정"
+                if st.session_state['spell_checked']:
+                    btn_label += " (✅ 완료)"
+                    
+                if st.button(btn_label, key="spell_check_btn", use_container_width=True):
+                    with st.spinner("맞춤법 및 문법을 교정 중입니다..."):
+                        content_gen = ContentGenerator()
+                        new_content = content_gen.spell_check_and_refine(blog_data['content'])
+                        if new_content:
+                            st.session_state['blog_data']['content'] = new_content
+                            st.session_state['spell_checked'] = True
+                            st.success("맞춤법 교정이 완료되었습니다!")
+                            st.rerun()
 
-        with col_act3:
-            word_count = get_word_count(blog_data['content'])
-            st.metric("글자 수 (공백 제외)", f"{word_count}자")
+        with act_col2:
+            counts = get_word_count_details(blog_data['content'])
+            # Modern word count display
+            st.markdown(f"""
+            <div style="background-color: #f8f9fa; padding: 10px; border-radius: 8px; border: 1px solid #dee2e6;">
+                <p style="margin-bottom: 2px; font-size: 0.8rem; color: #6c757d;">글자 수 (공백 제외)</p>
+                <p style="margin: 0; font-size: 1.8rem; font-weight: bold; color: #0d6efd;">{counts['total_no_spaces']} <span style="font-size: 1rem; font-weight: normal; color: #212529;">자</span></p>
+                <p style="margin: 0; font-size: 0.75rem; color: #adb5bd;">(한글: {counts['korean_only']}자 / 전체: {counts['total_with_spaces']}자)</p>
+            </div>
+            """, unsafe_allow_html=True)
 
+        st.divider()
         col1, col2 = st.columns([1, 1])
 
         with col1:
             st.subheader("1. 썸네일 이미지")
             if image_path:
-                st.image(image_path, caption="SEO 최적화 썸네일 (800x800, No Text)", use_column_width=True)
+                st.image(image_path, caption="AI가 생성한 저작권 걱정 없는 이미지 (800x800)", use_column_width=True)
                 
                 with open(image_path, "rb") as file:
-                    btn = st.download_button(
-                        label="📥 이미지 다운로드",
+                    st.download_button(
+                        label="📥 이미지 파일로 저장",
                         data=file,
                         file_name="thumbnail.jpg",
-                        mime="image/jpeg"
+                        mime="image/jpeg",
+                        use_container_width=True
                     )
+            else:
+                st.warning("이미지 생성에 실패했습니다. 다시 시도하거나 URL을 확인하세요.")
 
         with col2:
             st.subheader("2. 블로그 정보")
-            st.session_state['blog_data']['title'] = st.text_input("제목", value=blog_data['title'])
-            tags_str = st.text_input("태그", value=", ".join(blog_data.get('tags', [])))
+            st.session_state['blog_data']['title'] = st.text_input("블로그 제목", value=blog_data['title'])
+            tags_str = st.text_input("해시태그", value=", ".join(blog_data.get('tags', [])))
             st.session_state['blog_data']['tags'] = [t.strip() for t in tags_str.split(",")]
+            
+            st.info("💡 제목과 태그를 수정한 뒤 HTML 코드를 복사하세요.")
 
         st.divider()
         
-        st.subheader("3. 본문 HTML (복사용)")
-        st.markdown("아래 코드를 복사해서 티스토리 에디터의 **HTML 모드**에 붙여넣으세요.")
-        st.code(blog_data['content'], language='html')
+        tab1, tab2 = st.tabs(["📝 본문 HTML 코드", "👀 포스팅 미리보기"])
+        
+        with tab1:
+            st.markdown("아래 코드를 복사해서 티스토리 에디터의 **HTML 모드**에 붙여넣으세요.")
+            st.code(blog_data['content'], language='html')
 
-        st.divider()
-        st.subheader("4. 미리보기")
-        
-        # Clean markdown fences and indentation for preview
-        preview_content = blog_data['content'].strip()
-        
-        # 1. Remove Markdown Code Fences (```html or ```)
-        if preview_content.startswith("```"):
-            lines = preview_content.split('\n')
-            if lines[0].strip().startswith("```"):
-                lines = lines[1:]
-            if lines and lines[-1].strip().startswith("```"):
-                lines = lines[:-1]
-            preview_content = "\n".join(lines)
+        with tab2:
+            # Clean preview content
+            preview_content = blog_data['content'].strip()
+            if preview_content.startswith("```"):
+                lines = preview_content.split('\n')
+                if lines[0].strip().startswith("```"): lines = lines[1:]
+                if lines and lines[-1].strip().startswith("```"): lines = lines[:-1]
+                preview_content = "\n".join(lines)
             
-        # 2. Remove Indentation
-        lines = preview_content.split('\n')
-        cleaned_lines = [line.lstrip() for line in lines]
-        preview_content = "\n".join(cleaned_lines)
-            
-        st.markdown(preview_content, unsafe_allow_html=True)
+            st.markdown(preview_content, unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
