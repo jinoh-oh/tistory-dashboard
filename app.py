@@ -168,7 +168,7 @@ def main():
                 
                 if st.button(btn_label, key="fact_check_btn", use_container_width=True):
                     with st.spinner("최신 정보를 확인하고 내용을 보강 중입니다..."):
-                        content_gen = ContentGenerator()
+                        content_gen = ContentGenerator(api_key=active_api_key)
                         new_content = content_gen.verify_and_rewrite(blog_data['content'], current_topic)
                         if new_content:
                             st.session_state['blog_data']['content'] = new_content
