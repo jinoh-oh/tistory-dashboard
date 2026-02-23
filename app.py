@@ -194,48 +194,58 @@ def main():
         with col1:
             st.subheader("1. 썸네일 이미지")
             if image_path:
-                # Use HTML <img> to force browser-side loading, bypassing server issues
+                # Optimized Rendering with fallback check
                 st.markdown(f"""
-                <div style="border: 1px solid #ddd; border-radius: 10px; overflow: hidden;">
-                    <img src="{image_path}" style="width: 100%; height: auto; display: block;" alt="AI Generated Blog Image">
+                <div style="border: 1px solid #ddd; border-radius: 10px; overflow: hidden; background-color: #f0f2f6; min-height: 200px; display: flex; align-items: center; justify-content: center;">
+                    <img src="{image_path}" style="width: 100%; height: auto; display: block;" 
+                         onerror="this.style.display='none'; this.nextSibling.style.display='block';" alt="Image">
+                    <div style="display:none; padding: 20px; text-align: center; color: #666;">
+                        ⚠️ 이미지를 불러올 수 없습니다. (서비스 일시 장애)<br>
+                        아래 '스톡 사진으로 변경' 버튼을 눌러주세요.
+                    </div>
                 </div>
                 """, unsafe_allow_html=True)
-                st.caption("AI가 생성한 저작권 걱정 없는 이미지 (800x800)")
+                st.caption("AI 또는 스톡 서비스에서 제공하는 저작권 걱정 없는 이미지")
 
-                # Optimized download logic using cache to avoid blocking UI
+                # Action Buttons
                 @st.cache_data(ttl=600)
                 def fetch_image_bytes(url):
                     try:
                         import requests
                         return requests.get(url, timeout=5).content
-                    except:
-                        return None
+                    except: return None
 
-                col_btn1, col_btn2 = st.columns(2)
-                with col_btn1:
+                c1, c2 = st.columns(2)
+                with c1:
                     img_bytes = fetch_image_bytes(image_path)
                     if img_bytes:
-                        st.download_button(
-                            label="📥 이미지 파일로 저장",
-                            data=img_bytes,
-                            file_name="thumbnail.jpg",
-                            mime="image/jpeg",
-                            use_container_width=True
-                        )
+                        st.download_button("📥 이미지 저장", data=img_bytes, file_name="thumnbail.jpg", mime="image/jpeg", use_container_width=True)
                     else:
-                        st.button("📥 (우클릭하여 저장)", disabled=True, use_container_width=True)
+                        st.button("📥 (우클릭 저장)", disabled=True, use_container_width=True)
                 
-                with col_btn2:
-                    if st.button("🔄 이미지 다시 생성", use_container_width=True):
-                        with st.spinner("새로운 이미지를 생성 중..."):
+                with c2:
+                    if st.button("🔄 AI로 다시 생성", use_container_width=True):
+                        with st.spinner("AI 이미지 생성 중..."):
                             image_gen = ImageGenerator()
-                            new_url = image_gen.get_image_url(blog_data['title'], blog_data.get('image_prompt'))
-                            st.session_state['image_path'] = new_url
+                            st.session_state['image_path'] = image_gen.get_ai_image_url(blog_data['title'], blog_data.get('image_prompt'))
                             st.rerun()
+
+                if st.button("🖼️ 고품질 스톡 사진으로 변경 (가장 확실함)", type="secondary", use_container_width=True):
+                    with st.spinner("스톡 사진 불러오는 중..."):
+                        image_gen = ImageGenerator()
+                        st.session_state['image_path'] = image_gen.get_stock_image_url(blog_data['title'])
+                        st.rerun()
                 
-                st.text_input("이미지 주소 직접 링크 (문제가 있을 때 사용):", value=image_path)
+                with st.expander("🔗 이미지 주소 및 복사"):
+                    st.code(image_path)
+                    st.info("위 주소를 브라우저에 직접 붙여넣어 이미지가 나오는지 확인해보세요.")
             else:
-                st.warning("이미지 생성에 실패했습니다. 다시 시도하거나 주제를 바꿈해 보세요.")
+                st.warning("이미지 생성에 실패했습니다.")
+                if st.button("🖼️ 스톡 사진으로 바로 생성"):
+                    image_gen = ImageGenerator()
+                    st.session_state['image_path'] = image_gen.get_stock_image_url(st.session_state.get('topic', 'Blog'))
+                    st.session_state['generated'] = True
+                    st.rerun()
 
         with col2:
             st.subheader("2. 블로그 정보")
