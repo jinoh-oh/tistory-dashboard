@@ -10,7 +10,9 @@ class ImageGenerator:
         Constructs and returns a Pollinations.ai URL for the image.
         """
         width, height = 800, 800
-        search_query = prompt if prompt else f"Refined, professional blog header for: {title}"
+        # AI generated prompts can be too long for URLs. Truncate to be safe.
+        raw_query = prompt if prompt else f"Refined, professional blog header for: {title}"
+        search_query = raw_query[:250] 
         
         encoded_prompt = urllib.parse.quote(search_query)
         seed = random.randint(1, 1000000)

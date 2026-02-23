@@ -194,22 +194,46 @@ def main():
         with col1:
             st.subheader("1. 썸네일 이미지")
             if image_path:
-                # image_path now contains the URL
-                st.image(image_path, caption="AI가 생성한 저작권 걱정 없는 이미지 (800x800)", use_column_width=True)
+                # Use HTML <img> to force browser-side loading, bypassing server issues
+                st.markdown(f"""
+                <div style="border: 1px solid #ddd; border-radius: 10px; overflow: hidden;">
+                    <img src="{image_path}" style="width: 100%; height: auto; display: block;" alt="AI Generated Blog Image">
+                </div>
+                """, unsafe_allow_html=True)
+                st.caption("AI가 생성한 저작권 걱정 없는 이미지 (800x800)")
+
+                # Optimized download logic using cache to avoid blocking UI
+                @st.cache_data(ttl=600)
+                def fetch_image_bytes(url):
+                    try:
+                        import requests
+                        return requests.get(url, timeout=5).content
+                    except:
+                        return None
+
+                col_btn1, col_btn2 = st.columns(2)
+                with col_btn1:
+                    img_bytes = fetch_image_bytes(image_path)
+                    if img_bytes:
+                        st.download_button(
+                            label="📥 이미지 파일로 저장",
+                            data=img_bytes,
+                            file_name="thumbnail.jpg",
+                            mime="image/jpeg",
+                            use_container_width=True
+                        )
+                    else:
+                        st.button("📥 (우클릭하여 저장)", disabled=True, use_container_width=True)
                 
-                # Fetch image data for download button
-                import requests
-                try:
-                    img_data = requests.get(image_path, timeout=10).content
-                    st.download_button(
-                        label="📥 이미지 파일로 저장",
-                        data=img_data,
-                        file_name="thumbnail.jpg",
-                        mime="image/jpeg",
-                        use_container_width=True
-                    )
-                except Exception:
-                    st.warning("이미지 다운로드 데이터를 불러오지 못했습니다. 우클릭하여 '이미지를 다른 이름으로 저장'을 이용해주세요.")
+                with col_btn2:
+                    if st.button("🔄 이미지 다시 생성", use_container_width=True):
+                        with st.spinner("새로운 이미지를 생성 중..."):
+                            image_gen = ImageGenerator()
+                            new_url = image_gen.get_image_url(blog_data['title'], blog_data.get('image_prompt'))
+                            st.session_state['image_path'] = new_url
+                            st.rerun()
+                
+                st.text_input("이미지 주소 직접 링크 (문제가 있을 때 사용):", value=image_path)
             else:
                 st.warning("이미지 생성에 실패했습니다. 다시 시도하거나 주제를 바꿈해 보세요.")
 
