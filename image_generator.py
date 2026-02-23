@@ -21,18 +21,21 @@ class ImageGenerator:
     def get_svg_thumbnail(self, text):
         """
         Generates a 100% reliable SVG thumbnail as a Data URL.
-        Polished: Better line spacing and vertical centering.
+        Features: Large bold text, big vertical spacing, and " >" symbol.
         """
         import base64
         
-        # Limit text for aesthetics
-        full_text = text[:40].strip()
-        words = full_text.split()
+        # User request: Add ' >' at the end for premium look
+        display_text = text.strip()
+        if not display_text.endswith(">"):
+            display_text += " >"
+            
+        words = display_text.split()
         lines = []
         current_line = ""
         
         for word in words:
-            if len(current_line + word) <= 10: # Slightly shorter for bigger text
+            if len(current_line + word) <= 8: # Even shorter for bigger font
                 current_line += (word + " ")
             else:
                 if current_line: lines.append(current_line.strip())
@@ -45,17 +48,17 @@ class ImageGenerator:
         colors = ["#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#06b6d4"]
         bg = random.choice(colors)
         
-        # Polished Spacing: INCREASE line_height to 120 for "spaced out" look
-        line_height = 120
+        # Polished Spacing: Maximize vertical air
+        line_height = 135 
         total_height = len(lines) * line_height
-        start_y = 400 - (total_height / 2) + (line_height / 1.4)
+        start_y = 400 - (total_height / 2) + (line_height / 1.3)
         
         text_elements = ""
-        font_size = "95px" if len(lines) <= 2 else "75px"
+        font_size = "100px" if len(lines) <= 2 else "80px"
         for i, line in enumerate(lines):
             y = start_y + (i * line_height)
-            # Higher horizontal contrast with paint-order for clarity
-            text_elements += f'<text x="50%" y="{y}" text-anchor="middle" fill="white" font-family="sans-serif" font-weight="900" font-size="{font_size}" style="paint-order: stroke; stroke: rgba(0,0,0,0.1); stroke-width: 4px;">{line}</text>'
+            # Use paint-order for broad contrast
+            text_elements += f'<text x="50%" y="{y}" text-anchor="middle" fill="white" font-family="sans-serif" font-weight="900" font-size="{font_size}" style="paint-order: stroke; stroke: rgba(0,0,0,0.1); stroke-width: 6px;">{line}</text>'
             
         svg = f"""
         <svg width="800" height="800" viewBox="0 0 800 800" xmlns="http://www.w3.org/2000/svg">
@@ -72,8 +75,9 @@ class ImageGenerator:
         Maps common Korean terms to English for stock photo relevance.
         """
         if not text: return "nature"
+        text_lower = text.lower()
         for ko, en in self.COMMON_TOPICS.items():
-            if ko in text:
+            if ko in text_lower:
                 return en
         # Fallback: Extract first ASCII word
         clean = "".join([c if (c.isalpha() or c == ' ') else ' ' for c in text if ord(c) < 128])
@@ -83,15 +87,15 @@ class ImageGenerator:
     def get_stock_image_url(self, title, keywords=None):
         """
         Returns a high-quality stock photo URL.
-        Primary: Unsplash (High relevance)
-        Secondary: LoremFlickr (Always loads)
+        Uses Unsplash Source with better keyword handling to avoid irrelevant images.
         """
         target = keywords if keywords else title
         kw = self.translate_keyword(target)
         
-        # Option 1: LoremFlickr with strict 'all,nature' tag to avoid cats.
-        # This service is extremely stable for Streamlit proxying.
-        return f"https://loremflickr.com/800/800/{kw},nature,professional/all?lock={random.randint(1, 1000)}"
+        seed = random.randint(1, 1000)
+        # Unsplash Source is usually more relevant than LoremFlickr for professional blog topics
+        # Adding a topic keyword like 'professional' or 'lifestyle' helps avoid random objects
+        return f"https://source.unsplash.com/featured/800x800?{kw},blog&sig={seed}"
 
     def get_image_url(self, title, prompt=None, keywords=None, use_stock=False):
         """
