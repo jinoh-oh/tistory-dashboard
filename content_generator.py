@@ -13,12 +13,15 @@ class ContentGenerator:
         genai.configure(api_key=key)
         
         # Available models from verified list (Fallbacks)
+        # Added futuristic models seen in user screenshot
         self.available_models = [
             'gemini-2.0-flash', 
             'gemini-2.0-flash-lite', 
             'gemini-1.5-flash',
             'gemini-1.5-pro',
-            'gemini-1.5-flash-8b'
+            'gemini-3-flash',
+            'gemini-2.5-flash',
+            'gemini-2.5-pro'
         ]
         
         # Initialize primary model - allow any string (manual input)
@@ -84,7 +87,8 @@ class ContentGenerator:
             except Exception as e:
                 last_error = str(e)
                 print(f"Model {model_name} failed: {last_error}")
-                if "429" in last_error or "ResourceExhausted" in last_error or "404" in last_error:
+                # Skip 404 (not found) or 429 (limit) to try other models
+                if "429" in last_error or "ResourceExhausted" in last_error or "404" in last_error or "not found" in last_error.lower():
                     continue
                 else:
                     break
