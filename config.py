@@ -2,27 +2,29 @@ import os
 import sys
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
+# 1. Load from .env file (for local development)
 load_dotenv()
 
-# Gemini Config
+GEMINI_API_KEY = None
+
+# 2. Try Streamlit Secrets (for Cloud deployment)
 try:
     import streamlit as st
-    # Try loading from Streamlit secrets first (for Cloud)
-    GEMINI_API_KEY = st.secrets.get("GEMINI_API_KEY")
-except (ImportError, FileNotFoundError):
-    GEMINI_API_KEY = None
+    # streamlit.secrets behaves like a dict. .get() is safe.
+    if hasattr(st, "secrets"):
+        GEMINI_API_KEY = st.secrets.get("GEMINI_API_KEY")
+except Exception:
+    pass
 
-# If not found in secrets, fallback to environment variable (for Local)
+# 3. Fallback to Environment Variables (if not in secrets)
 if not GEMINI_API_KEY:
     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
+# For debugging in console (optional, but helpful)
+# print(f"DEBUG: GEMINI_API_KEY detected: {bool(GEMINI_API_KEY)}")
+
 def validate_config():
-    missing = []
     if not GEMINI_API_KEY:
-        missing.append("GEMINI_API_KEY")
-    
-    if missing:
-        print(f"Error: Missing required environment variables: {', '.join(missing)}")
-        print("Please check your .env file.")
-        sys.exit(1)
+        print("Error: GEMINI_API_KEY is missing.")
+        return False
+    return True
