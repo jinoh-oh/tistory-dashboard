@@ -12,7 +12,7 @@ class ContentGenerator:
         key = api_key if api_key else config.GEMINI_API_KEY
         genai.configure(api_key=key)
         
-        # Available models from verified list
+        # Available models from verified list (Fallbacks)
         self.available_models = [
             'gemini-2.0-flash', 
             'gemini-2.0-flash-lite', 
@@ -21,8 +21,8 @@ class ContentGenerator:
             'gemini-1.5-flash-8b'
         ]
         
-        # Initialize primary model
-        self.primary_model_name = selected_model if selected_model in self.available_models else self.available_models[0]
+        # Initialize primary model - allow any string (manual input)
+        self.primary_model_name = selected_model if selected_model else self.available_models[0]
         
         # Safety settings (Relaxed)
         self.safety_settings = {
@@ -32,11 +32,18 @@ class ContentGenerator:
             HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
         }
 
-        # FIX: Initialize self.model which is used in fact-check and spell-check
-        self.model = genai.GenerativeModel(
-            model_name=self.primary_model_name, 
-            safety_settings=self.safety_settings
-        )
+        # Handle initialization error for experimental/manual models
+        try:
+            self.model = genai.GenerativeModel(
+                model_name=self.primary_model_name, 
+                safety_settings=self.safety_settings
+            )
+        except Exception:
+            # Fallback if manual model name is invalid
+            self.model = genai.GenerativeModel(
+                model_name=self.available_models[0],
+                safety_settings=self.safety_settings
+            )
 
         self.system_instruction = """
         당신은 티스토리 수익형 블로그 전문 필진입니다.

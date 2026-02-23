@@ -101,12 +101,25 @@ def main():
         
         st.divider()
         st.header("🤖 AI 모델 선택")
-        active_model = st.selectbox(
+        model_options = (
+            'gemini-2.0-flash', 
+            'gemini-2.0-flash-lite', 
+            'gemini-1.5-flash', 
+            'gemini-1.5-pro', 
+            'gemini-1.5-flash-8b',
+            '직접 입력 (Manual Entry)'
+        )
+        selected_option = st.selectbox(
             "사용할 Gemini 모델을 선택하세요:",
-            ('gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-1.5-flash-8b'),
+            model_options,
             index=0,
             help="Flash 모델은 빠르고, Pro 모델은 더 고성능입니다."
         )
+        
+        if selected_option == '직접 입력 (Manual Entry)':
+            active_model = st.text_input("모델 이름을 직접 입력하세요:", value="gemini-3-flash", help="AI Studio에 표시된 정확한 모델명을 입력하세요.")
+        else:
+            active_model = selected_option
         
         st.divider()
         st.header("📝 서식 선택")
