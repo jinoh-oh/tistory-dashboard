@@ -54,7 +54,7 @@ TEMPLATE_BASIC = """
     "content": "위 규칙을 모두 반영한 HTML 코드 (이모지 없음)",
     "tags": ["태그1", "태그2", "태그3", "태그4", "태그5"],
     "image_prompt": "Vibrant professional digital thumbnail for blog about {topic}, bold typography, high contrast, clean minimalist graphic design, 8k resolution.",
-    "image_keywords": "diet"
+    "image_keywords": "2-3 specific English keywords describing the topic (e.g., 'cryptocurrency,finance' or 'skin care,beauty')"
 }}
 """
 
@@ -176,6 +176,6 @@ TEMPLATE_HTML = """
     "content": "위 HTML 템플릿에 내용을 채운 결과 코드",
     "tags": ["태그1", "태그2", "태그3", "태그4", "태그5"],
     "image_prompt": "YouTube style thumbnail for {topic}, large bold font, vibrant colors, modern clean background, high quality graphic design.",
-    "image_keywords": "fitness"
+    "image_keywords": "2-3 specific English keywords describing the topic (e.g., 'fitness,workout' or 'travel,seoul')"
 }}
 """
