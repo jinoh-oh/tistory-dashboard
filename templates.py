@@ -50,6 +50,7 @@ TEMPLATE_BASIC = """
 반드시 아래 JSON 포맷으로 출력하세요.
 {{
     "title": "SEO 최적화된 제목 (키워드 포함)",
+    "thumbnail_title": "핵심 키워드 중심의 짧은 제목 (15자 이내)",
     "content": "위 규칙을 모두 반영한 HTML 코드 (이모지 없음)",
     "tags": ["태그1", "태그2", "태그3", "태그4", "태그5"],
     "image_prompt": "Vibrant professional digital thumbnail for blog about {topic}, bold typography, high contrast, clean minimalist graphic design, 8k resolution.",
@@ -171,6 +172,7 @@ TEMPLATE_HTML = """
 [Output Format (JSON)]
 {{
     "title": "SEO 최적화된 제목",
+    "thumbnail_title": "상위 노출 핵심 키워드 제목 (15자 이내)",
     "content": "위 HTML 템플릿에 내용을 채운 결과 코드",
     "tags": ["태그1", "태그2", "태그3", "태그4", "태그5"],
     "image_prompt": "YouTube style thumbnail for {topic}, large bold font, vibrant colors, modern clean background, high quality graphic design.",

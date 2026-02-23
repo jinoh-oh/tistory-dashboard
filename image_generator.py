@@ -18,91 +18,91 @@ class ImageGenerator:
         "부업": "side hustle", "수익": "money", "자기계발": "success"
     }
 
-    def get_ai_image_url(self, title, prompt=None):
+    def get_svg_thumbnail(self, text):
         """
-        Constructs and returns a Pollinations.ai URL for the image.
-        Uses the most stable /p/ endpoint with ultra-short prompt.
+        Generates a 100% reliable SVG thumbnail as a Data URL.
+        Features: Large bold text, auto-wrapping, vibrant colors.
         """
-        width, height = 800, 800
-        # Use simple English instruction for the URL path
-        raw_query = prompt if prompt else f"Thumbnail for {title}"
+        import base64
         
-        # Filter: ONLY Alpha characters and Space. No numbers or special chars.
-        # This is for MAX compatibility with weird WAFs.
-        clean_query = "".join([c for c in raw_query if (c.isalpha() or c == ' ') and ord(c) < 128])
+        # Limit text to 30 chars for readability, but try to wrap at 10-12
+        full_text = text[:40].strip()
+        words = full_text.split()
+        lines = []
+        current_line = ""
         
-        if not clean_query.strip():
-            clean_query = "modern blog layout"
-            
-        # VERY SHORT: 40 chars max to avoid URL limit issues in some proxies
-        search_query = clean_query[:40].strip().replace(' ', '+')
+        for word in words:
+            if len(current_line + word) <= 12:
+                current_line += (word + " ")
+            else:
+                if current_line: lines.append(current_line.strip())
+                current_line = word + " "
+        if current_line: lines.append(current_line.strip())
         
-        seed = random.randint(1, 100000)
-        # Using pollination.ai/p/ is often more direct than the subdomain
-        return f"https://pollinations.ai/p/{search_query}?width={width}&height={height}&seed={seed}&nologo=true"
-
-    def get_color_thumbnail(self, text):
-        """
-        Guaranteed 100% visible solid color thumbnail with text.
-        Truncated to 15 chars for professional look.
-        """
-        import urllib.parse
+        # Max 3 lines for clean look
+        lines = lines[:3]
         
-        # User requested 10-15 chars max for aesthetics
-        display_text = text[:15].strip()
-        if len(text) > 15:
-            display_text += "..."
-            
-        encoded_text = urllib.parse.quote(display_text)
-        # Random vibrant background colors
-        colors = ["3b82f6", "ef4444", "10b981", "f59e0b", "8b5cf6"]
+        # Vibrant colors (Tailwind palette)
+        colors = ["#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#06b6d4"]
         bg = random.choice(colors)
-        return f"https://placehold.jp/80/{bg}/ffffff/800x800.png?text={encoded_text}"
+        
+        # SVG Construction
+        # Use white text with a slight shadow for premium feel
+        line_height = 80
+        start_y = 400 - ((len(lines)-1) * line_height / 2)
+        
+        text_elements = ""
+        # Dynamic font size based on line count
+        font_size = "90px" if len(lines) <= 2 else "70px"
+        for i, line in enumerate(lines):
+            y = start_y + (i * line_height)
+            text_elements += f'<text x="50%" y="{y}" text-anchor="middle" fill="white" font-family="sans-serif" font-weight="900" font-size="{font_size}">{line}</text>'
+            
+        svg = f"""
+        <svg width="800" height="800" viewBox="0 0 800 800" xmlns="http://www.w3.org/2000/svg">
+            <rect width="800" height="800" fill="{bg}"/>
+            {text_elements}
+        </svg>
+        """
+        
+        encoded = base64.b64encode(svg.encode('utf-8')).decode('utf-8')
+        return f"data:image/svg+xml;base64,{encoded}"
 
     def translate_keyword(self, text):
         """
         Maps common Korean terms to English for stock photo relevance.
-        Handles both Korean and English inputs.
         """
         if not text: return "nature"
-        
-        # 1. Priority: Hardcoded Korean mapping
         for ko, en in self.COMMON_TOPICS.items():
             if ko in text:
                 return en
-        
-        # 2. If it contains English words, take the first one
-        # Split by spaces/comma and filter for ASCII words
-        parts = [w.strip() for w in text.replace(',', ' ').split() if w.strip()]
-        for p in parts:
-            if all(ord(c) < 128 for c in p) and p.isalpha():
-                return p.lower()
-                
-        # 3. Last resort: Extract first word from any ASCII characters present
+        # Fallback: Extract first ASCII word
         clean = "".join([c if (c.isalpha() or c == ' ') else ' ' for c in text if ord(c) < 128])
-        ascii_parts = [w for w in clean.split() if w]
-        return ascii_parts[0] if ascii_parts else "nature"
+        parts = clean.split()
+        return parts[0] if parts else "modern"
 
     def get_stock_image_url(self, title, keywords=None):
         """
-        Returns a high-quality stock photo URL from LoremFlickr.
-        Guaranteed to use a single simple word to avoid cats.
+        Returns a high-quality stock photo URL from Unsplash.
+        Unsplash is much more relevant than LoremFlickr.
         """
         target = keywords if keywords else title
-        final_keyword = self.translate_keyword(target)
-        # LoremFlickr is very stable with a single word.
-        return f"https://loremflickr.com/800/800/{final_keyword}?lock={random.randint(1, 1000)}"
+        kw = self.translate_keyword(target)
+        # Use Unsplash Source for better quality and relevance
+        return f"https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=800&q=80&keywords={kw}" if kw == "hotel" else \
+               f"https://source.unsplash.com/800x800/?{kw}&sig={random.randint(1, 1000)}"
 
     def get_image_url(self, title, prompt=None, keywords=None, use_stock=False):
         """
-        Unified method to get image URL.
+        Unified method. Defaults to SVG for text thumbnails.
         """
         if use_stock:
             return self.get_stock_image_url(title, keywords)
-        return self.get_ai_image_url(title, prompt)
+        # We now use SVG by default for "Thumbnail" because it's 100% reliable
+        return self.get_svg_thumbnail(title)
 
     def generate_image(self, title, prompt=None, include_text=False):
         """
         Compatibility method.
         """
-        return self.get_image_url(title, prompt)
+        return self.get_image_url(title)

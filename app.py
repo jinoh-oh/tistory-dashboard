@@ -54,7 +54,9 @@ def generate_blog_post(topic, prompt_template, api_key=None):
     with st.spinner('🎨 AI가 주제와 관련된 이미지를 생성하고 있습니다...'):
         image_gen = ImageGenerator()
         try:
-            image_url = image_gen.get_image_url(blog_data['title'], blog_data.get('image_prompt'))
+            # Prefer the concise thumbnail_title for SVG thumbnails
+            display_title = blog_data.get('thumbnail_title', blog_data['title'])
+            image_url = image_gen.get_image_url(display_title, blog_data.get('image_prompt'))
         except Exception as e:
             st.error(f"이미지 URL 생성 실패: {e}")
             image_url = None
@@ -209,46 +211,45 @@ def main():
         with col1:
             st.subheader("1. 썸네일 이미지")
             if image_path:
-                # Use native Streamlit image for better reliability in Cloud environments
-                # st.image handles proxying and CORS better than raw HTML tags
+                # Use native Streamlit image for better reliability
                 st.image(image_path, use_container_width=True)
-                st.caption(f"🎨 현재 검색 키워드: {blog_data.get('image_keywords', '기본')}")
+                
+                # Keyword control for Stock Photos
+                current_kw = blog_data.get('image_keywords', 'nature')
+                new_kw = st.text_input("🖼️ 스톡 사진 검색어 (고양이가 나오면 수정하세요)", value=current_kw)
+                if new_kw != current_kw:
+                    blog_data['image_keywords'] = new_kw
 
                 # Image Action Buttons
                 c1, c2 = st.columns(2)
                 with c1:
-                    # Direct Link (Always works)
                     st.link_button("🔗 이미지 크게 보기/저장", image_path, use_container_width=True)
                 
                 with c2:
-                    if st.button("🔄 AI로 다시 생성", type="primary", use_container_width=True):
+                    if st.button("🔄 새로운 색상/배경으로 변경", type="primary", use_container_width=True):
                         image_gen = ImageGenerator()
-                        st.session_state['image_path'] = image_gen.get_image_url(
-                            blog_data['title'], 
-                            blog_data.get('image_prompt'),
-                            keywords=blog_data.get('image_keywords'),
-                            use_stock=False
-                        )
+                        display_title = blog_data.get('thumbnail_title', blog_data['title'])
+                        st.session_state['image_path'] = image_gen.get_svg_thumbnail(display_title)
                         st.rerun()
 
                 # Robust Fallback Options
                 st.markdown("---")
-                st.markdown("##### 🛠️ 이미지가 안 나오거나 마음에 안 드시나요?")
+                st.markdown("##### 🛠️ 다른 스타일의 이미지가 필요하신가요?")
                 
                 f_col1, f_col2 = st.columns(2)
                 with f_col1:
-                    if st.button("✅ 기본 텍스트 썸네일 (100% 성공)", use_container_width=True):
+                    if st.button("✅ 텍스트 썸네일 (기본값)", use_container_width=True):
                         image_gen = ImageGenerator()
-                        st.session_state['image_path'] = image_gen.get_color_thumbnail(blog_data['title'])
+                        display_title = blog_data.get('thumbnail_title', blog_data['title'])
+                        st.session_state['image_path'] = image_gen.get_svg_thumbnail(display_title)
                         st.rerun()
                 
                 with f_col2:
-                    if st.button("🖼️ 고품질 스톡 사진 (가장 확실함)", use_container_width=True):
+                    if st.button("🖼️ 고화질 스톡 사진 (Unsplash)", use_container_width=True):
                         image_gen = ImageGenerator()
-                        st.session_state['image_path'] = image_gen.get_image_url(
+                        st.session_state['image_path'] = image_gen.get_stock_image_url(
                             blog_data['title'], 
-                            keywords=blog_data.get('image_keywords'),
-                            use_stock=True
+                            keywords=blog_data.get('image_keywords')
                         )
                         st.rerun()
                 
@@ -264,9 +265,9 @@ def main():
                 """, unsafe_allow_html=True)
             else:
                 st.warning("이미지 정보가 없습니다.")
-                if st.button("🖼️ 기본 이미지 생성"):
+                if st.button("🖼️ 기본 썸네일 생성"):
                     image_gen = ImageGenerator()
-                    st.session_state['image_path'] = image_gen.get_color_thumbnail(st.session_state.get('topic', 'Blog'))
+                    st.session_state['image_path'] = image_gen.get_svg_thumbnail(st.session_state.get('topic', 'Blog'))
                     st.session_state['generated'] = True
                     st.rerun()
 
