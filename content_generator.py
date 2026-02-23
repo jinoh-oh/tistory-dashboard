@@ -10,32 +10,30 @@ class ContentGenerator:
     def __init__(self):
         genai.configure(api_key=config.GEMINI_API_KEY)
         
-        # Define relaxed safety settings to prevent blocks on topics like medical info
-        safety_settings = {
+        # Available models from verified list
+        self.available_models = [
+            'gemini-2.0-flash-lite', 
+            'gemini-2.0-flash', 
+            'gemini-flash-latest'
+        ]
+        
+        # Safety settings (Relaxed)
+        self.safety_settings = {
             HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
             HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
             HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
             HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
         }
 
-        # Use a model confirmed to be available and robust
-        self.model = genai.GenerativeModel(
-            model_name='gemini-1.5-flash',
-            safety_settings=safety_settings
-        )
         self.system_instruction = """
         당신은 티스토리 수익형 블로그 전문 필진입니다.
-        당신의 최우선 목표는 '풍부한 양'과 '독창적 정보'를 제공하는 것입니다.
-        다음 지침을 철저히 준수하세요:
-        1. 분량: 본문 텍스트 내의 한글 글자 수(공백 제외)가 반드시 1,600자~2,000자 사이가 되도록 매우 길고 상세하게 작성하세요.
-        2. 품질: 각 소제목 아래에는 최소 3개 이상의 상세 문단을 작성하여 깊이 있는 정보를 제공하세요.
-        3. 형식: HTML 태그를 적절히 활용하여 독자가 읽기 편한 구조를 만드세요.
-        4. 말투: 친절하고 전문적인 해요체를 사용하며, 이모지는 절대 사용하지 마세요.
+        본문 텍스트 내의 한글 글자 수(공백 제외)가 반드시 1,600자~2,000자 사이가 되도록 매우 길고 상세하게 작성하세요.
+        문단마다 깊이 있는 정보를 제공하고, 이모지 사용을 금지하며 전문적인 해요체를 사용하세요.
         """
 
     def generate_blog_post(self, topic, prompt_template):
         """
-        Returns a tuple: (blog_data, error_detail)
+        Tries multiple models to overcome potential 404s or Quota limits.
         """
         try:
             prompt = prompt_template.replace("{topic}", topic)
@@ -44,29 +42,33 @@ class ContentGenerator:
 
         full_prompt = f"{self.system_instruction}\n\n[USER REQUEST]\n{prompt}\n\n⚠️ 중요: 반드시 한글 1,600자 이상의 충분한 분량으로 작성하세요."
 
-        last_error = "알 수 없는 오류"
-        for attempt in range(2):
+        last_error = "모든 가용 모델의 할당량을 초과했거나 연결에 실패했습니다."
+        
+        for model_name in self.available_models:
+            print(f"Attempting generation with model: {model_name}...")
             try:
-                response = self.model.generate_content(full_prompt, generation_config={"response_mime_type": "application/json"})
+                model = genai.GenerativeModel(model_name=model_name, safety_settings=self.safety_settings)
+                response = model.generate_content(full_prompt, generation_config={"response_mime_type": "application/json"})
                 
-                # Check if blocked by safety
                 if not response.text:
                     if response.prompt_feedback:
-                        last_error = f"보안 필터에 의해 차단됨: {response.prompt_feedback}"
-                    else:
-                        last_error = "API 응답이 비어있습니다 (보안 또는 기타 사유)"
+                        last_error = f"보안 필터 차단 ({model_name}): {response.prompt_feedback}"
                     continue
 
                 data = json.loads(response.text)
                 return data, None
+                
             except Exception as e:
                 last_error = str(e)
+                print(f"Model {model_name} failed: {last_error}")
+                # If it's a quota error, try the next model immediately
                 if "429" in last_error or "ResourceExhausted" in last_error:
-                    print(f"API Quota limit reached (429). Waiting 5 seconds before retry {attempt+1}/2...")
-                    time.sleep(5)
+                    continue
+                # If it's a 404, try the next model
+                elif "404" in last_error:
                     continue
                 else:
-                    break
+                    break # Critical error, stop
         
         return None, last_error
 
