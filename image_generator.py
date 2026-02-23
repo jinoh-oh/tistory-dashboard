@@ -44,10 +44,16 @@ class ImageGenerator:
     def get_color_thumbnail(self, text):
         """
         Guaranteed 100% visible solid color thumbnail with text.
-        Ultimate fallback using placehold.jp.
+        Truncated to 15 chars for professional look.
         """
         import urllib.parse
-        encoded_text = urllib.parse.quote(text[:30])
+        
+        # User requested 10-15 chars max for aesthetics
+        display_text = text[:15].strip()
+        if len(text) > 15:
+            display_text += "..."
+            
+        encoded_text = urllib.parse.quote(display_text)
         # Random vibrant background colors
         colors = ["3b82f6", "ef4444", "10b981", "f59e0b", "8b5cf6"]
         bg = random.choice(colors)
@@ -56,22 +62,35 @@ class ImageGenerator:
     def translate_keyword(self, text):
         """
         Maps common Korean terms to English for stock photo relevance.
+        Handles both Korean and English inputs.
         """
         if not text: return "nature"
-        # Topic detection
+        
+        # 1. Priority: Hardcoded Korean mapping
         for ko, en in self.COMMON_TOPICS.items():
             if ko in text:
                 return en
-        # Fallback to ASCII strip
-        clean = "".join([c for c in text if c.isalpha() and ord(c) < 128])
-        return clean if clean else "modern"
+        
+        # 2. If it contains English words, take the first one
+        # Split by spaces/comma and filter for ASCII words
+        parts = [w.strip() for w in text.replace(',', ' ').split() if w.strip()]
+        for p in parts:
+            if all(ord(c) < 128 for c in p) and p.isalpha():
+                return p.lower()
+                
+        # 3. Last resort: Extract first word from any ASCII characters present
+        clean = "".join([c if (c.isalpha() or c == ' ') else ' ' for c in text if ord(c) < 128])
+        ascii_parts = [w for w in clean.split() if w]
+        return ascii_parts[0] if ascii_parts else "nature"
 
     def get_stock_image_url(self, title, keywords=None):
         """
         Returns a high-quality stock photo URL from LoremFlickr.
+        Guaranteed to use a single simple word to avoid cats.
         """
         target = keywords if keywords else title
         final_keyword = self.translate_keyword(target)
+        # LoremFlickr is very stable with a single word.
         return f"https://loremflickr.com/800/800/{final_keyword}?lock={random.randint(1, 1000)}"
 
     def get_image_url(self, title, prompt=None, keywords=None, use_stock=False):
