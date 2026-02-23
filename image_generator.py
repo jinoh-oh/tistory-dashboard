@@ -13,8 +13,14 @@ class ImageGenerator:
         width, height = 800, 800
         # Use simpler prompt and sanitize for URL stability
         raw_query = prompt if prompt else title
-        # Sanitize: Remove commas, dots, special chars and truncate
-        clean_query = "".join([c for c in raw_query if c.isalnum() or c == ' '])
+        # Sanitize: Remove commas, dots, special chars and ensure ASCII ONLY
+        # This prevents 403 Forbidden/1033 errors from encoded non-English chars
+        clean_query = "".join([c for c in raw_query if (c.isalnum() or c == ' ') and ord(c) < 128])
+        
+        # If the query becomes empty (e.g. was all Korean), fallback to a safe term or title
+        if not clean_query.strip():
+            clean_query = "blog feature image"
+            
         search_query = clean_query[:60].strip()
         
         encoded_prompt = urllib.parse.quote(search_query)
@@ -22,22 +28,28 @@ class ImageGenerator:
         
         return f"https://image.pollinations.ai/prompt/{encoded_prompt}?width={width}&height={height}&nologo=true&seed={seed}&enhance=true"
 
-    def get_stock_image_url(self, title):
+    def get_stock_image_url(self, title, keywords=None):
         """
         Returns a high-quality stock photo URL from LoremFlickr.
         Very stable and fast.
         """
-        # LoremFlickr uses simple keywords
-        clean_query = "".join([c for c in title if c.isalnum() or c == ' '])
-        keywords = urllib.parse.quote(clean_query[:30].strip())
-        return f"https://loremflickr.com/800/800/{keywords}?random={random.randint(1, 1000)}"
+        # LoremFlickr uses simple keywords. MUST BE ENGLISH.
+        raw_query = keywords if keywords else title
+        # ENSURE ASCII ONLY for the URL path
+        clean_query = "".join([c for c in raw_query if (c.isalnum() or c == ' ') and ord(c) < 128])
+        
+        if not clean_query.strip():
+            clean_query = "nature professional"
+            
+        final_keywords = urllib.parse.quote(clean_query[:40].strip())
+        return f"https://loremflickr.com/800/800/{final_keywords}?random={random.randint(1, 1000)}"
 
-    def get_image_url(self, title, prompt=None, use_stock=False):
+    def get_image_url(self, title, prompt=None, keywords=None, use_stock=False):
         """
         Unified method to get image URL.
         """
         if use_stock:
-            return self.get_stock_image_url(title)
+            return self.get_stock_image_url(title, keywords)
         return self.get_ai_image_url(title, prompt)
 
     def generate_image(self, title, prompt=None, include_text=False):

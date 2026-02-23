@@ -241,13 +241,22 @@ def main():
                     if st.button("🔄 AI로 다시 생성", use_container_width=True):
                         with st.spinner("AI 이미지 생성 중..."):
                             image_gen = ImageGenerator()
-                            st.session_state['image_path'] = image_gen.get_ai_image_url(blog_data['title'], blog_data.get('image_prompt'))
+                            st.session_state['image_path'] = image_gen.get_image_url(
+                                blog_data['title'], 
+                                blog_data.get('image_prompt'),
+                                keywords=blog_data.get('image_keywords'),
+                                use_stock=False
+                            )
                             st.rerun()
 
                 if st.button("🖼️ 고품질 스톡 사진으로 변경 (가장 확실함)", type="secondary", use_container_width=True):
                     with st.spinner("스톡 사진 불러오는 중..."):
                         image_gen = ImageGenerator()
-                        st.session_state['image_path'] = image_gen.get_stock_image_url(blog_data['title'])
+                        st.session_state['image_path'] = image_gen.get_image_url(
+                            blog_data['title'], 
+                            keywords=blog_data.get('image_keywords'),
+                            use_stock=True
+                        )
                         st.rerun()
                 
                 with st.expander("🔗 이미지 주소 및 복사"):
