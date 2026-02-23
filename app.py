@@ -5,6 +5,7 @@ from image_generator import ImageGenerator
 import os
 import templates
 import re
+import urllib.parse
 
 # Page Config
 st.set_page_config(
