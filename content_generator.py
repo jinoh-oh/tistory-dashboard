@@ -7,13 +7,17 @@ import time
 from google.generativeai.types import HarmCategory, HarmBlockThreshold
 
 class ContentGenerator:
-    def __init__(self):
-        genai.configure(api_key=config.GEMINI_API_KEY)
+    def __init__(self, api_key=None):
+        # Use provided key or fallback to config
+        key = api_key if api_key else config.GEMINI_API_KEY
+        genai.configure(api_key=key)
         
         # Available models from verified list
         self.available_models = [
             'gemini-2.0-flash-lite', 
             'gemini-2.0-flash', 
+            'gemini-1.5-flash',
+            'gemini-1.5-flash-8b',
             'gemini-flash-latest'
         ]
         

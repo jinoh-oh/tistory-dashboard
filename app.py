@@ -35,14 +35,14 @@ def get_word_count_details(html_content):
         "total_with_spaces": total_with_spaces
     }
 
-def generate_blog_post(topic, prompt_template):
+def generate_blog_post(topic, prompt_template, api_key=None):
     """
     Orchestrates the blog generation process.
     Returns: (blog_data, image_url, error_message)
     """
     # 1. Generate Content
     with st.spinner('🤖 AI가 글을 작성하고 있습니다...'):
-        content_gen = ContentGenerator()
+        content_gen = ContentGenerator(api_key=api_key)
         blog_data, error_detail = content_gen.generate_blog_post(topic, prompt_template)
     
     if not blog_data:
@@ -74,17 +74,31 @@ def main():
     if 'spell_checked' not in st.session_state:
         st.session_state['spell_checked'] = False
 
-    # Sidebar for Config Check
+    # Sidebar for Config & API Key
     with st.sidebar:
         st.header("⚙️ 설정 및 도구")
-        if config.GEMINI_API_KEY:
+        
+        # API Key Input
+        user_api_key = st.text_input(
+            "Gemini API Key 입력", 
+            value="", 
+            type="password",
+            placeholder="여기에 키를 입력하면 우선 적용됩니다."
+        )
+        
+        active_api_key = user_api_key if user_api_key else config.GEMINI_API_KEY
+        
+        if active_api_key:
             st.success("✅ Gemini API 연결됨")
         else:
             st.error("❌ API Key 필요")
-            st.info(".env 파일 또는 Secrets에 키를 입력해주세요.")
+            st.info("비어있을 시 .env 또는 Secrets의 키를 사용합니다.")
             
+        st.warning("⚠️ **무료 버전 제한**: 일일 약 20회 정도의 글 생성이 가능하며, 초과 시 내일 다시 이용하거나 새로운 API 키를 발급받아야 합니다.")
+        
         st.divider()
         st.header("📝 서식 선택")
+        # ... (rest of sidebar code stays similar)
         template_choice = st.selectbox(
             "사용할 서식을 선택하세요:",
             ("수익형 HTML 템플릿 (코드 복붙용)", "수익형 블로그 규칙 (가이드라인)")
@@ -111,7 +125,7 @@ def main():
             st.warning("주제를 입력해주세요.")
             return
 
-        if not config.GEMINI_API_KEY:
+        if not active_api_key:
             st.error("API Key 설정이 필요합니다.")
             return
 
@@ -123,7 +137,7 @@ def main():
         st.session_state['spell_checked'] = False
 
         # Run Generation
-        blog_data, image_path, error_message = generate_blog_post(topic, user_template)
+        blog_data, image_path, error_message = generate_blog_post(topic, user_template, api_key=active_api_key)
         
         if blog_data:
             st.session_state['blog_data'] = blog_data
