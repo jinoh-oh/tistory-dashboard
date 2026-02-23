@@ -262,6 +262,19 @@ def main():
                 with st.expander("🔗 이미지 주소 및 복사"):
                     st.code(image_path)
                     st.info("위 주소를 브라우저에 직접 붙여넣어 이미지가 나오는지 확인해보세요.")
+                
+                # Ultimate Fallback: Manual Search Button
+                search_query = blog_data['title']
+                search_url = f"https://www.google.com/search?tbm=isch&q={urllib.parse.quote(search_query)}"
+                pixabay_url = f"https://pixabay.com/images/search/{urllib.parse.quote(blog_data.get('image_keywords', search_query))}/"
+                
+                st.markdown(f"""
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <a href="{search_url}" target="_blank" style="flex: 1; text-align: center; background-color: #4285f4; color: white; padding: 10px; border-radius: 5px; text-decoration: none; font-size: 14px;">🔍 Google 이미지 검색</a>
+                    <a href="{pixabay_url}" target="_blank" style="flex: 1; text-align: center; background-color: #05a081; color: white; padding: 10px; border-radius: 5px; text-decoration: none; font-size: 14px;">🖼️ Pixabay 무료 이미지</a>
+                </div>
+                """, unsafe_allow_html=True)
+                st.caption("서비스 장애 시 위 버튼을 눌러 이미지를 직접 다운로드하여 사용하실 수 있습니다.")
             else:
                 st.warning("이미지 생성에 실패했습니다.")
                 if st.button("🖼️ 스톡 사진으로 바로 생성"):

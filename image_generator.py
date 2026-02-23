@@ -13,35 +13,38 @@ class ImageGenerator:
         width, height = 800, 800
         # Use simpler prompt and sanitize for URL stability
         raw_query = prompt if prompt else title
-        # Sanitize: ASCII ONLY, No special chars except spaces for now
+        # Sanitize: ASCII ONLY
         clean_query = "".join([c for c in raw_query if (c.isalnum() or c == ' ') and ord(c) < 128])
         
         if not clean_query.strip():
             clean_query = "blog feature image"
             
-        # VERY IMPORTANT: Replace spaces with '+' for URL stability
-        # This prevents %20 in the path which some WAFs/Origins block
-        search_query = clean_query[:60].strip().replace(' ', '+')
+        # Use simple quote for the whole string. 
+        # Pollinations handles spaces well if quoted.
+        search_query = clean_query[:70].strip()
+        encoded_prompt = urllib.parse.quote(search_query)
         
         seed = random.randint(1, 1000000)
-        return f"https://image.pollinations.ai/prompt/{search_query}?width={width}&height={height}&nologo=true&seed={seed}&enhance=true"
+        return f"https://image.pollinations.ai/prompt/{encoded_prompt}?width={width}&height={height}&nologo=true&seed={seed}&enhance=true"
 
     def get_stock_image_url(self, title, keywords=None):
         """
         Returns a high-quality stock photo URL from LoremFlickr.
-        Very stable and fast.
         """
         raw_query = keywords if keywords else title
         # ENSURE ASCII ONLY for the URL path
-        clean_query = "".join([c for c in raw_query if (c.isalnum() or c == ' ') and ord(c) < 128])
+        clean_query = "".join([c for c in raw_query if (c.isalnum() or c == ' ' or c == ',') and ord(c) < 128])
         
-        if not clean_query.strip():
-            clean_query = "nature professional"
+        # Take the FIRST 1-2 keywords only. Too many keywords = cats.
+        # Split by comma or space
+        parts = [p.strip() for p in clean_query.replace(',', ' ').split() if p.strip()]
+        if not parts:
+            final_keywords = "nature"
+        else:
+            # Take only the first two words for maximum relevance in LoremFlickr
+            final_keywords = ",".join(parts[:2])
             
-        # LoremFlickr: Multiple tags MUST be separated by commas, NOT spaces.
-        final_keywords = clean_query[:40].strip().replace(' ', ',')
-        
-        # Use 'lock' param for consistency, it's more stable than 'random' query param
+        # Use 'lock' param for consistency
         return f"https://loremflickr.com/800/800/{final_keywords}?lock={random.randint(1, 1000)}"
 
     def get_image_url(self, title, prompt=None, keywords=None, use_stock=False):
@@ -50,6 +53,9 @@ class ImageGenerator:
         """
         if use_stock:
             return self.get_stock_image_url(title, keywords)
+        
+        # Default strategy: Try AI first, but if it's the first load, 
+        # we might want to ensure keywords are passed.
         return self.get_ai_image_url(title, prompt)
 
     def generate_image(self, title, prompt=None, include_text=False):

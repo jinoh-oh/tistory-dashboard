@@ -52,8 +52,8 @@ TEMPLATE_BASIC = """
     "title": "SEO 최적화된 제목 (키워드 포함)",
     "content": "위 규칙을 모두 반영한 HTML 코드 (이모지 없음)",
     "tags": ["태그1", "태그2", "태그3", "태그4", "태그5"],
-    "image_prompt": "A high-quality, professional, realistic photography related to {topic}. Bright and clean atmosphere. No text, minimalist composition, 8k resolution. (MUST BE IN ENGLISH)",
-    "image_keywords": "Simple English keywords for image search (e.g., 'healthy diet', 'fitness')"
+    "image_prompt": "A high-quality, professional, realistic photography related to {topic}. Bright and clean atmosphere. No text, minimalist composition. (ENGLISH)",
+    "image_keywords": "diet, fitness"
 }}
 """
 
@@ -173,7 +173,7 @@ TEMPLATE_HTML = """
     "title": "SEO 최적화된 제목",
     "content": "위 HTML 템플릿에 내용을 채운 결과 코드",
     "tags": ["태그1", "태그2", "태그3", "태그4", "태그5"],
-    "image_prompt": "A high-quality, professional, realistic photography related to {topic}. Minimalist and modern style. No text, no background noise, centered composition, high quality. (MUST BE IN ENGLISH)",
-    "image_keywords": "Simple English keywords for image search"
+    "image_prompt": "A high-quality, professional, realistic photography related to {topic}. Minimalist and modern style. No text, centered composition. (ENGLISH)",
+    "image_keywords": "diet"
 }}
 """
