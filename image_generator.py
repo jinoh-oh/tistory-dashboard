@@ -13,27 +13,24 @@ class ImageGenerator:
         width, height = 800, 800
         # Use simpler prompt and sanitize for URL stability
         raw_query = prompt if prompt else title
-        # Sanitize: Remove commas, dots, special chars and ensure ASCII ONLY
-        # This prevents 403 Forbidden/1033 errors from encoded non-English chars
+        # Sanitize: ASCII ONLY, No special chars except spaces for now
         clean_query = "".join([c for c in raw_query if (c.isalnum() or c == ' ') and ord(c) < 128])
         
-        # If the query becomes empty (e.g. was all Korean), fallback to a safe term or title
         if not clean_query.strip():
             clean_query = "blog feature image"
             
-        search_query = clean_query[:60].strip()
+        # VERY IMPORTANT: Replace spaces with '+' for URL stability
+        # This prevents %20 in the path which some WAFs/Origins block
+        search_query = clean_query[:60].strip().replace(' ', '+')
         
-        encoded_prompt = urllib.parse.quote(search_query)
         seed = random.randint(1, 1000000)
-        
-        return f"https://image.pollinations.ai/prompt/{encoded_prompt}?width={width}&height={height}&nologo=true&seed={seed}&enhance=true"
+        return f"https://image.pollinations.ai/prompt/{search_query}?width={width}&height={height}&nologo=true&seed={seed}&enhance=true"
 
     def get_stock_image_url(self, title, keywords=None):
         """
         Returns a high-quality stock photo URL from LoremFlickr.
         Very stable and fast.
         """
-        # LoremFlickr uses simple keywords. MUST BE ENGLISH.
         raw_query = keywords if keywords else title
         # ENSURE ASCII ONLY for the URL path
         clean_query = "".join([c for c in raw_query if (c.isalnum() or c == ' ') and ord(c) < 128])
@@ -41,8 +38,11 @@ class ImageGenerator:
         if not clean_query.strip():
             clean_query = "nature professional"
             
-        final_keywords = urllib.parse.quote(clean_query[:40].strip())
-        return f"https://loremflickr.com/800/800/{final_keywords}?random={random.randint(1, 1000)}"
+        # LoremFlickr: Multiple tags MUST be separated by commas, NOT spaces.
+        final_keywords = clean_query[:40].strip().replace(' ', ',')
+        
+        # Use 'lock' param for consistency, it's more stable than 'random' query param
+        return f"https://loremflickr.com/800/800/{final_keywords}?lock={random.randint(1, 1000)}"
 
     def get_image_url(self, title, prompt=None, keywords=None, use_stock=False):
         """
