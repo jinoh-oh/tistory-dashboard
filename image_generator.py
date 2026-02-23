@@ -45,10 +45,10 @@ class ImageGenerator:
         colors = ["#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#06b6d4"]
         bg = random.choice(colors)
         
-        # Polished Spacing: INCREASE line_height from 80 to 110
-        line_height = 110
+        # Polished Spacing: INCREASE line_height to 120 for "spaced out" look
+        line_height = 120
         total_height = len(lines) * line_height
-        start_y = 400 - (total_height / 2) + (line_height / 1.5)
+        start_y = 400 - (total_height / 2) + (line_height / 1.4)
         
         text_elements = ""
         font_size = "95px" if len(lines) <= 2 else "75px"
