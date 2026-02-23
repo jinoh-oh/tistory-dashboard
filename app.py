@@ -210,17 +210,19 @@ def main():
             st.subheader("1. 썸네일 이미지")
             if image_path:
                 # Optimized Rendering with fallback check
+                # Add a 'random' check to the alt text or title to force some browsers to refresh
                 st.markdown(f"""
-                <div style="border: 1px solid #ddd; border-radius: 10px; overflow: hidden; background-color: #f0f2f6; min-height: 200px; display: flex; align-items: center; justify-content: center;">
+                <div style="border: 2px solid #0d6efd; border-radius: 10px; overflow: hidden; background-color: #f8f9fa; min-height: 300px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;">
                     <img src="{image_path}" style="width: 100%; height: auto; display: block;" 
-                         onerror="this.style.display='none'; this.nextSibling.style.display='block';" alt="Image">
-                    <div style="display:none; padding: 20px; text-align: center; color: #666;">
-                        ⚠️ 이미지를 불러올 수 없습니다. (서비스 일시 장애)<br>
-                        아래 '스톡 사진으로 변경' 버튼을 눌러주세요.
+                         onerror="this.style.display='none'; this.nextSibling.style.display='block';" alt="AI Thumbnail">
+                    <div style="display:none; padding: 40px; text-align: center; color: #dc3545;">
+                        <p style="font-size: 1.2rem; font-weight: bold; margin-bottom: 10px;">⚠️ 이미지를 불러오거나 생성 중입니다.</p>
+                        <p style="font-size: 0.9rem; color: #6c757d;">인터넷 환경에 따라 10~20초 정도 걸릴 수 있습니다.<br>계속 안 나온다면 아래 '스톡 사진으로 변경'을 클릭하세요.</p>
+                        <a href="{image_path}" target="_blank" style="display: inline-block; margin-top: 15px; padding: 8px 16px; background-color: #0d6efd; color: white; border-radius: 5px; text-decoration: none;">🔗 브라우저에서 직접 확인하기</a>
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
-                st.caption("AI 또는 스톡 서비스에서 제공하는 저작권 걱정 없는 이미지")
+                st.caption(f"🎨 현재 이미지 검색 키워드: {blog_data.get('image_keywords', '기본 주제')}")
 
                 # Action Buttons
                 @st.cache_data(ttl=600)
@@ -234,51 +236,51 @@ def main():
                 with c1:
                     img_bytes = fetch_image_bytes(image_path)
                     if img_bytes:
-                        st.download_button("📥 이미지 저장", data=img_bytes, file_name="thumnbail.jpg", mime="image/jpeg", use_container_width=True)
+                        st.download_button("📥 이미지 저장", data=img_bytes, file_name="thumbnail.jpg", mime="image/jpeg", use_container_width=True)
                     else:
                         st.button("📥 (우클릭 저장)", disabled=True, use_container_width=True)
                 
                 with c2:
-                    if st.button("🔄 AI로 다시 생성", use_container_width=True):
-                        # Use a direct, unique key to ensure button state doesn't get stuck
+                    if st.button("🔄 AI로 다시 생성", type="primary", use_container_width=True):
                         image_gen = ImageGenerator()
-                        new_url = image_gen.get_image_url(
+                        st.session_state['image_path'] = image_gen.get_image_url(
                             blog_data['title'], 
                             blog_data.get('image_prompt'),
                             keywords=blog_data.get('image_keywords'),
                             use_stock=False
                         )
-                        st.session_state['image_path'] = new_url
                         st.rerun()
 
-                if st.button("🖼️ 고품질 스톡 사진으로 변경 (가장 확실함)", type="secondary", use_container_width=True):
-                    image_gen = ImageGenerator()
-                    st.session_state['image_path'] = image_gen.get_image_url(
-                        blog_data['title'], 
-                        keywords=blog_data.get('image_keywords'),
-                        use_stock=True
-                    )
-                    st.rerun()
-                
-                with st.expander("🔗 이미지 주소 및 복사 (문제가 있을 때 클릭)"):
-                    st.markdown(f"[[여기를 클릭하여 이미지 직접 확인]]({image_path})")
-                    st.code(image_path)
-                    st.info("클릭했을 때 이미지가 잘 보인다면 로딩 중인 것이니 조금만 기다려주세요.")
+                s_col1, s_col2 = st.columns([2, 1])
+                with s_col1:
+                    if st.button("🖼️ 고품질 스톡 사진으로 변경 (가장 확실함)", use_container_width=True):
+                        image_gen = ImageGenerator()
+                        st.session_state['image_path'] = image_gen.get_image_url(
+                            blog_data['title'], 
+                            keywords=blog_data.get('image_keywords'),
+                            use_stock=True
+                        )
+                        st.rerun()
+                with s_col2:
+                    # Secret debug toggle
+                    with st.expander("🛠️ 주소"):
+                        st.code(image_path)
                 
                 # Ultimate Fallback: Manual Search Button
+                st.markdown("---")
+                st.markdown("**위 이미지가 모두 나오지 않나요?** 직접 검색해서 넣는 것이 가장 빠를 수 있습니다.")
                 search_query = blog_data['title']
                 search_url = f"https://www.google.com/search?tbm=isch&q={urllib.parse.quote(search_query)}"
                 pixabay_url = f"https://pixabay.com/images/search/{urllib.parse.quote(blog_data.get('image_keywords', search_query))}/"
                 
                 st.markdown(f"""
-                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <div style="display: flex; gap: 10px; margin-top: 5px;">
                     <a href="{search_url}" target="_blank" style="flex: 1; text-align: center; background-color: #4285f4; color: white; padding: 10px; border-radius: 5px; text-decoration: none; font-size: 14px;">🔍 Google 이미지 검색</a>
                     <a href="{pixabay_url}" target="_blank" style="flex: 1; text-align: center; background-color: #05a081; color: white; padding: 10px; border-radius: 5px; text-decoration: none; font-size: 14px;">🖼️ Pixabay 무료 이미지</a>
                 </div>
                 """, unsafe_allow_html=True)
-                st.caption("서비스 장애 시 위 버튼을 눌러 이미지를 직접 다운로드하여 사용하실 수 있습니다.")
             else:
-                st.warning("이미지 생성에 실패했습니다.")
+                st.warning("이미지 생성 설정에 문제가 있습니다.")
                 if st.button("🖼️ 스톡 사진으로 바로 생성"):
                     image_gen = ImageGenerator()
                     st.session_state['image_path'] = image_gen.get_stock_image_url(st.session_state.get('topic', 'Blog'))
