@@ -48,21 +48,16 @@ def generate_blog_post(topic, prompt_template):
         st.error("글 생성에 실패했습니다. API 설정을 확인해주세요.")
         return None
 
-    # 2. Generate Image
+    # 2. Generate Image URL
     with st.spinner('🎨 AI가 주제와 관련된 이미지를 생성하고 있습니다...'):
-        output_dir = os.path.join("output", "streamlit_generated")
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
-            
-        image_gen = ImageGenerator(output_dir=output_dir)
+        image_gen = ImageGenerator()
         try:
-            # Pass image_prompt to the generator
-            image_path = image_gen.generate_image(blog_data['title'], blog_data.get('image_prompt'), include_text=False)
+            image_url = image_gen.get_image_url(blog_data['title'], blog_data.get('image_prompt'))
         except Exception as e:
-            st.error(f"이미지 생성 실패: {e}")
-            image_path = None
+            st.error(f"이미지 URL 생성 실패: {e}")
+            image_url = None
 
-    return blog_data, image_path
+    return blog_data, image_url
 
 def main():
     st.title("✍️ 티스토리 블로그 자동생성기")
@@ -193,18 +188,24 @@ def main():
         with col1:
             st.subheader("1. 썸네일 이미지")
             if image_path:
+                # image_path now contains the URL
                 st.image(image_path, caption="AI가 생성한 저작권 걱정 없는 이미지 (800x800)", use_column_width=True)
                 
-                with open(image_path, "rb") as file:
+                # Fetch image data for download button
+                import requests
+                try:
+                    img_data = requests.get(image_path, timeout=10).content
                     st.download_button(
                         label="📥 이미지 파일로 저장",
-                        data=file,
+                        data=img_data,
                         file_name="thumbnail.jpg",
                         mime="image/jpeg",
                         use_container_width=True
                     )
+                except Exception:
+                    st.warning("이미지 다운로드 데이터를 불러오지 못했습니다. 우클릭하여 '이미지를 다른 이름으로 저장'을 이용해주세요.")
             else:
-                st.warning("이미지 생성에 실패했습니다. 다시 시도하거나 URL을 확인하세요.")
+                st.warning("이미지 생성에 실패했습니다. 다시 시도하거나 주제를 바꿈해 보세요.")
 
         with col2:
             st.subheader("2. 블로그 정보")
