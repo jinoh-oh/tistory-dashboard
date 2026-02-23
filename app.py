@@ -36,14 +36,14 @@ def get_word_count_details(html_content):
         "total_with_spaces": total_with_spaces
     }
 
-def generate_blog_post(topic, prompt_template, api_key=None):
+def generate_blog_post(topic, prompt_template, api_key=None, selected_model=None):
     """
     Orchestrates the blog generation process.
     Returns: (blog_data, image_url, error_message)
     """
     # 1. Generate Content
     with st.spinner('🤖 AI가 글을 작성하고 있습니다...'):
-        content_gen = ContentGenerator(api_key=api_key)
+        content_gen = ContentGenerator(api_key=api_key, selected_model=selected_model)
         blog_data, error_detail = content_gen.generate_blog_post(topic, prompt_template)
     
     if not blog_data:
@@ -100,6 +100,15 @@ def main():
         st.warning("⚠️ **무료 버전 제한**: 일일 약 20회 정도의 글 생성이 가능하며, 초과 시 내일 다시 이용하거나 새로운 API 키를 발급받아야 합니다.")
         
         st.divider()
+        st.header("🤖 AI 모델 선택")
+        active_model = st.selectbox(
+            "사용할 Gemini 모델을 선택하세요:",
+            ('gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-1.5-flash-8b'),
+            index=0,
+            help="Flash 모델은 빠르고, Pro 모델은 더 고성능입니다."
+        )
+        
+        st.divider()
         st.header("📝 서식 선택")
         # ... (rest of sidebar code stays similar)
         template_choice = st.selectbox(
@@ -140,7 +149,7 @@ def main():
         st.session_state['spell_checked'] = False
 
         # Run Generation
-        blog_data, image_path, error_message = generate_blog_post(topic, user_template, api_key=active_api_key)
+        blog_data, image_path, error_message = generate_blog_post(topic, user_template, api_key=active_api_key, selected_model=active_model)
         
         if blog_data:
             st.session_state['blog_data'] = blog_data
@@ -171,7 +180,7 @@ def main():
                 
                 if st.button(btn_label, key="fact_check_btn", use_container_width=True):
                     with st.spinner("최신 정보를 확인하고 내용을 보강 중입니다..."):
-                        content_gen = ContentGenerator(api_key=active_api_key)
+                        content_gen = ContentGenerator(api_key=active_api_key, selected_model=active_model)
                         new_content = content_gen.verify_and_rewrite(blog_data['content'], current_topic)
                         if new_content:
                             st.session_state['blog_data']['content'] = new_content
@@ -186,7 +195,7 @@ def main():
                     
                 if st.button(btn_label, key="spell_check_btn", use_container_width=True):
                     with st.spinner("맞춤법 및 문법을 교정 중입니다..."):
-                        content_gen = ContentGenerator()
+                        content_gen = ContentGenerator(api_key=active_api_key, selected_model=active_model)
                         new_content = content_gen.spell_check_and_refine(blog_data['content'])
                         if new_content:
                             st.session_state['blog_data']['content'] = new_content

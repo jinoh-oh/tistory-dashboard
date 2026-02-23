@@ -7,19 +7,22 @@ import time
 from google.generativeai.types import HarmCategory, HarmBlockThreshold
 
 class ContentGenerator:
-    def __init__(self, api_key=None):
+    def __init__(self, api_key=None, selected_model=None):
         # Use provided key or fallback to config
         key = api_key if api_key else config.GEMINI_API_KEY
         genai.configure(api_key=key)
         
         # Available models from verified list
         self.available_models = [
-            'gemini-2.0-flash-lite', 
             'gemini-2.0-flash', 
+            'gemini-2.0-flash-lite', 
             'gemini-1.5-flash',
-            'gemini-1.5-flash-8b',
-            'gemini-flash-latest'
+            'gemini-1.5-pro',
+            'gemini-1.5-flash-8b'
         ]
+        
+        # Initialize primary model
+        self.primary_model_name = selected_model if selected_model in self.available_models else self.available_models[0]
         
         # Safety settings (Relaxed)
         self.safety_settings = {
@@ -29,6 +32,12 @@ class ContentGenerator:
             HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
         }
 
+        # FIX: Initialize self.model which is used in fact-check and spell-check
+        self.model = genai.GenerativeModel(
+            model_name=self.primary_model_name, 
+            safety_settings=self.safety_settings
+        )
+
         self.system_instruction = """
         당신은 티스토리 수익형 블로그 전문 필진입니다.
         본문 텍스트 내의 한글 글자 수(공백 제외)가 반드시 1,600자~2,000자 사이가 되도록 매우 길고 상세하게 작성하세요.
@@ -37,18 +46,21 @@ class ContentGenerator:
 
     def generate_blog_post(self, topic, prompt_template):
         """
-        Tries multiple models to overcome potential 404s or Quota limits.
+        Tries user-selected model first, then fallbacks.
         """
         try:
             prompt = prompt_template.replace("{topic}", topic)
         except Exception:
             prompt = f"Topic: {topic}\n\n" + prompt_template
-
+ 
         full_prompt = f"{self.system_instruction}\n\n[USER REQUEST]\n{prompt}\n\n⚠️ 중요: 반드시 한글 1,600자 이상의 충분한 분량으로 작성하세요."
 
+        # Create a priority list: primary model first, then others
+        trial_models = [self.primary_model_name] + [m for m in self.available_models if m != self.primary_model_name]
+        
         last_error = "모든 가용 모델의 할당량을 초과했거나 연결에 실패했습니다."
         
-        for model_name in self.available_models:
+        for model_name in trial_models:
             print(f"Attempting generation with model: {model_name}...")
             try:
                 model = genai.GenerativeModel(model_name=model_name, safety_settings=self.safety_settings)
@@ -65,14 +77,10 @@ class ContentGenerator:
             except Exception as e:
                 last_error = str(e)
                 print(f"Model {model_name} failed: {last_error}")
-                # If it's a quota error, try the next model immediately
-                if "429" in last_error or "ResourceExhausted" in last_error:
-                    continue
-                # If it's a 404, try the next model
-                elif "404" in last_error:
+                if "429" in last_error or "ResourceExhausted" in last_error or "404" in last_error:
                     continue
                 else:
-                    break # Critical error, stop
+                    break
         
         return None, last_error
 
