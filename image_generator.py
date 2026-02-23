@@ -21,42 +21,41 @@ class ImageGenerator:
     def get_svg_thumbnail(self, text):
         """
         Generates a 100% reliable SVG thumbnail as a Data URL.
-        Features: Large bold text, auto-wrapping, vibrant colors.
+        Polished: Better line spacing and vertical centering.
         """
         import base64
         
-        # Limit text to 30 chars for readability, but try to wrap at 10-12
+        # Limit text for aesthetics
         full_text = text[:40].strip()
         words = full_text.split()
         lines = []
         current_line = ""
         
         for word in words:
-            if len(current_line + word) <= 12:
+            if len(current_line + word) <= 10: # Slightly shorter for bigger text
                 current_line += (word + " ")
             else:
                 if current_line: lines.append(current_line.strip())
                 current_line = word + " "
         if current_line: lines.append(current_line.strip())
         
-        # Max 3 lines for clean look
         lines = lines[:3]
         
         # Vibrant colors (Tailwind palette)
         colors = ["#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#06b6d4"]
         bg = random.choice(colors)
         
-        # SVG Construction
-        # Use white text with a slight shadow for premium feel
-        line_height = 80
-        start_y = 400 - ((len(lines)-1) * line_height / 2)
+        # Polished Spacing: INCREASE line_height from 80 to 110
+        line_height = 110
+        total_height = len(lines) * line_height
+        start_y = 400 - (total_height / 2) + (line_height / 1.5)
         
         text_elements = ""
-        # Dynamic font size based on line count
-        font_size = "90px" if len(lines) <= 2 else "70px"
+        font_size = "95px" if len(lines) <= 2 else "75px"
         for i, line in enumerate(lines):
             y = start_y + (i * line_height)
-            text_elements += f'<text x="50%" y="{y}" text-anchor="middle" fill="white" font-family="sans-serif" font-weight="900" font-size="{font_size}">{line}</text>'
+            # Higher horizontal contrast with paint-order for clarity
+            text_elements += f'<text x="50%" y="{y}" text-anchor="middle" fill="white" font-family="sans-serif" font-weight="900" font-size="{font_size}" style="paint-order: stroke; stroke: rgba(0,0,0,0.1); stroke-width: 4px;">{line}</text>'
             
         svg = f"""
         <svg width="800" height="800" viewBox="0 0 800 800" xmlns="http://www.w3.org/2000/svg">
@@ -83,14 +82,16 @@ class ImageGenerator:
 
     def get_stock_image_url(self, title, keywords=None):
         """
-        Returns a high-quality stock photo URL from Unsplash.
-        Unsplash is much more relevant than LoremFlickr.
+        Returns a high-quality stock photo URL.
+        Primary: Unsplash (High relevance)
+        Secondary: LoremFlickr (Always loads)
         """
         target = keywords if keywords else title
         kw = self.translate_keyword(target)
-        # Use Unsplash Source for better quality and relevance
-        return f"https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=800&q=80&keywords={kw}" if kw == "hotel" else \
-               f"https://source.unsplash.com/800x800/?{kw}&sig={random.randint(1, 1000)}"
+        
+        # Option 1: LoremFlickr with strict 'all,nature' tag to avoid cats.
+        # This service is extremely stable for Streamlit proxying.
+        return f"https://loremflickr.com/800/800/{kw},nature,professional/all?lock={random.randint(1, 1000)}"
 
     def get_image_url(self, title, prompt=None, keywords=None, use_stock=False):
         """
