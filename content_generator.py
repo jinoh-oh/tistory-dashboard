@@ -4,12 +4,23 @@ import json
 import re
 import time
 
+from google.generativeai.types import HarmCategory, HarmBlockThreshold
+
 class ContentGenerator:
     def __init__(self):
         genai.configure(api_key=config.GEMINI_API_KEY)
-        # 1.5-flash-latest is extremely stable and often has better quota pools
+        
+        # Define relaxed safety settings to prevent blocks on topics like medical info
+        safety_settings = {
+            HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+            HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+            HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+            HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+        }
+
         self.model = genai.GenerativeModel(
-            model_name='gemini-1.5-flash-latest'
+            model_name='gemini-1.5-flash-latest',
+            safety_settings=safety_settings
         )
         self.system_instruction = """
         당신은 티스토리 수익형 블로그 전문 필진입니다.
@@ -23,7 +34,7 @@ class ContentGenerator:
 
     def generate_blog_post(self, topic, prompt_template):
         """
-        Generates a blog post title, content, and image prompt based on the topic.
+        Returns a tuple: (blog_data, error_detail)
         """
         try:
             prompt = prompt_template.replace("{topic}", topic)
@@ -32,22 +43,31 @@ class ContentGenerator:
 
         full_prompt = f"{self.system_instruction}\n\n[USER REQUEST]\n{prompt}\n\n⚠️ 중요: 반드시 한글 1,600자 이상의 충분한 분량으로 작성하세요."
 
-        # Retry logic for Quota limits (429 errors)
+        last_error = "알 수 없는 오류"
         for attempt in range(2):
             try:
                 response = self.model.generate_content(full_prompt, generation_config={"response_mime_type": "application/json"})
+                
+                # Check if blocked by safety
+                if not response.text:
+                    if response.prompt_feedback:
+                        last_error = f"보안 필터에 의해 차단됨: {response.prompt_feedback}"
+                    else:
+                        last_error = "API 응답이 비어있습니다 (보안 또는 기타 사유)"
+                    continue
+
                 data = json.loads(response.text)
-                return data
+                return data, None
             except Exception as e:
-                error_msg = str(e)
-                if "429" in error_msg or "ResourceExhausted" in error_msg:
+                last_error = str(e)
+                if "429" in last_error or "ResourceExhausted" in last_error:
                     print(f"API Quota limit reached (429). Waiting 5 seconds before retry {attempt+1}/2...")
                     time.sleep(5)
                     continue
                 else:
-                    print(f"Error generating content: {e}")
-                    return None
-        return None
+                    break
+        
+        return None, last_error
 
     def verify_and_rewrite(self, content, topic):
         """

@@ -38,15 +38,16 @@ def get_word_count_details(html_content):
 def generate_blog_post(topic, prompt_template):
     """
     Orchestrates the blog generation process.
+    Returns: (blog_data, image_url, error_message)
     """
     # 1. Generate Content
     with st.spinner('🤖 AI가 글을 작성하고 있습니다...'):
         content_gen = ContentGenerator()
-        blog_data = content_gen.generate_blog_post(topic, prompt_template)
+        blog_data, error_detail = content_gen.generate_blog_post(topic, prompt_template)
     
     if not blog_data:
-        st.error("글 생성에 실패했습니다. API 설정을 확인해주세요.")
-        return None
+        full_error = f"글 생성에 실패했습니다.\n\n**상세 원인:** {error_detail}"
+        return None, None, full_error
 
     # 2. Generate Image URL
     with st.spinner('🎨 AI가 주제와 관련된 이미지를 생성하고 있습니다...'):
@@ -57,7 +58,7 @@ def generate_blog_post(topic, prompt_template):
             st.error(f"이미지 URL 생성 실패: {e}")
             image_url = None
 
-    return blog_data, image_url
+    return blog_data, image_url, None
 
 def main():
     st.title("✍️ 티스토리 블로그 자동생성기")
@@ -114,18 +115,23 @@ def main():
             st.error("API Key 설정이 필요합니다.")
             return
 
-        # Reset states for new post
+        # Clear previous generation results and reset states
+        st.session_state['generated'] = False
+        st.session_state['blog_data'] = None
+        st.session_state['image_path'] = None
         st.session_state['fact_checked'] = False
         st.session_state['spell_checked'] = False
 
-        result = generate_blog_post(topic, user_template)
+        # Run Generation
+        blog_data, image_path, error_message = generate_blog_post(topic, user_template)
         
-        if result:
-            blog_data, image_path = result
+        if blog_data:
             st.session_state['blog_data'] = blog_data
             st.session_state['image_path'] = image_path
             st.session_state['generated'] = True
             st.session_state['topic'] = topic
+        else:
+            st.error(error_message)
 
     # Display Results
     if st.session_state.get('generated'):
