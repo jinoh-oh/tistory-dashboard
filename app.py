@@ -196,12 +196,14 @@ def main():
                 if st.button(btn_label, key="fact_check_btn", use_container_width=True):
                     with st.spinner("최신 정보를 확인하고 내용을 보강 중입니다..."):
                         content_gen = ContentGenerator(api_key=active_api_key, selected_model=active_model)
-                        new_content = content_gen.verify_and_rewrite(blog_data['content'], current_topic)
+                        new_content, error_msg = content_gen.verify_and_rewrite(blog_data['content'], current_topic)
                         if new_content:
                             st.session_state['blog_data']['content'] = new_content
                             st.session_state['fact_checked'] = True
                             st.success("정보 보완이 완료되었습니다!")
                             st.rerun()
+                        else:
+                            st.error(f"정보 보완에 실패했습니다. 원인: {error_msg}")
 
             with b_col2:
                 btn_label = "✍️ 맞춤법 검사 및 교정"
@@ -211,12 +213,14 @@ def main():
                 if st.button(btn_label, key="spell_check_btn", use_container_width=True):
                     with st.spinner("맞춤법 및 문법을 교정 중입니다..."):
                         content_gen = ContentGenerator(api_key=active_api_key, selected_model=active_model)
-                        new_content = content_gen.spell_check_and_refine(blog_data['content'])
+                        new_content, error_msg = content_gen.spell_check_and_refine(blog_data['content'])
                         if new_content:
                             st.session_state['blog_data']['content'] = new_content
                             st.session_state['spell_checked'] = True
                             st.success("맞춤법 교정이 완료되었습니다!")
                             st.rerun()
+                        else:
+                            st.error(f"맞춤법 교정에 실패했습니다. 원인: {error_msg}")
 
         with act_col2:
             counts = get_word_count_details(blog_data['content'])

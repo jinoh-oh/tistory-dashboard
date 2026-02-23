@@ -35,28 +35,64 @@ class ContentGenerator:
             HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
         }
 
-        # Handle initialization error for experimental/manual models
-        try:
-            self.model = genai.GenerativeModel(
-                model_name=self.primary_model_name, 
-                safety_settings=self.safety_settings
-            )
-        except Exception:
-            # Fallback if manual model name is invalid
-            self.model = genai.GenerativeModel(
-                model_name=self.available_models[0],
-                safety_settings=self.safety_settings
-            )
-
         self.system_instruction = """
         당신은 티스토리 수익형 블로그 전문 필진입니다.
         본문 텍스트 내의 한글 글자 수(공백 제외)가 반드시 1,600자~2,000자 사이가 되도록 매우 길고 상세하게 작성하세요.
         문단마다 깊이 있는 정보를 제공하고, 이모지 사용을 금지하며 전문적인 해요체를 사용하세요.
         """
 
+    def _generate_with_fallback(self, prompt, is_json=True):
+        """
+        Internal helper: Tries primary model first, then fallbacks.
+        Handles JSON parsing and common errors.
+        """
+        # Create a priority list: primary model first, then others
+        trial_models = [self.primary_model_name] + [m for m in self.available_models if m != self.primary_model_name]
+        
+        last_error = "모든 가용 모델의 할당량을 초과했거나 연결에 실패했습니다."
+        
+        for model_name in trial_models:
+            print(f"Attempting task with model: {model_name}...")
+            try:
+                model = genai.GenerativeModel(model_name=model_name, safety_settings=self.safety_settings)
+                
+                gen_config = {"response_mime_type": "application/json"} if is_json else {}
+                response = model.generate_content(prompt, generation_config=gen_config)
+                
+                if not response.text:
+                    if response.prompt_feedback:
+                        last_error = f"보안 필터 차단 ({model_name}): {response.prompt_feedback}"
+                    continue
+
+                if is_json:
+                    # Strip markdown code blocks if present
+                    text = response.text.strip()
+                    if text.startswith("```json"):
+                        text = text.replace("```json", "", 1).replace("```", "", 1).strip()
+                    elif text.startswith("```"):
+                        text = text.replace("```", "", 1).replace("```", "", 1).strip()
+                    
+                    data = json.loads(text)
+                    return data, None
+                else:
+                    return response.text, None
+                
+            except Exception as e:
+                last_error = str(e)
+                print(f"Model {model_name} failed: {last_error}")
+                # Skip 404 or 429
+                if "429" in last_error or "ResourceExhausted" in last_error or "404" in last_error or "not found" in last_error.lower():
+                    continue
+                else:
+                    # Might be a transient error, wait briefly and try next model
+                    time.sleep(2)
+                    continue
+        
+        return None, last_error
+
     def generate_blog_post(self, topic, prompt_template):
         """
-        Tries user-selected model first, then fallbacks.
+        Orchestrates main blog generation.
         """
         try:
             prompt = prompt_template.replace("{topic}", topic)
@@ -64,40 +100,11 @@ class ContentGenerator:
             prompt = f"Topic: {topic}\n\n" + prompt_template
  
         full_prompt = f"{self.system_instruction}\n\n[USER REQUEST]\n{prompt}\n\n⚠️ 중요: 반드시 한글 1,600자 이상의 충분한 분량으로 작성하세요."
-
-        # Create a priority list: primary model first, then others
-        trial_models = [self.primary_model_name] + [m for m in self.available_models if m != self.primary_model_name]
-        
-        last_error = "모든 가용 모델의 할당량을 초과했거나 연결에 실패했습니다."
-        
-        for model_name in trial_models:
-            print(f"Attempting generation with model: {model_name}...")
-            try:
-                model = genai.GenerativeModel(model_name=model_name, safety_settings=self.safety_settings)
-                response = model.generate_content(full_prompt, generation_config={"response_mime_type": "application/json"})
-                
-                if not response.text:
-                    if response.prompt_feedback:
-                        last_error = f"보안 필터 차단 ({model_name}): {response.prompt_feedback}"
-                    continue
-
-                data = json.loads(response.text)
-                return data, None
-                
-            except Exception as e:
-                last_error = str(e)
-                print(f"Model {model_name} failed: {last_error}")
-                # Skip 404 (not found) or 429 (limit) to try other models
-                if "429" in last_error or "ResourceExhausted" in last_error or "404" in last_error or "not found" in last_error.lower():
-                    continue
-                else:
-                    break
-        
-        return None, last_error
+        return self._generate_with_fallback(full_prompt, is_json=True)
 
     def verify_and_rewrite(self, content, topic):
         """
-        Verifies if the content is up-to-date and rewrites it if necessary.
+        Verifies if the content is up-to-date and rewrites it.
         """
         prompt = f"""
         당신은 전문 사실 확인 및 콘텐츠 편집가입니다.
@@ -118,26 +125,14 @@ class ContentGenerator:
             "content": "수정 및 보완된 HTML 본문"
         }}
         """
-        # Retry logic for Quota limits (429 errors)
-        for attempt in range(2):
-            try:
-                response = self.model.generate_content(prompt, generation_config={"response_mime_type": "application/json"})
-                data = json.loads(response.text)
-                return data.get('content')
-            except Exception as e:
-                error_msg = str(e)
-                if "429" in error_msg or "ResourceExhausted" in error_msg:
-                    print(f"API Quota limit reached (429). Waiting 5 seconds before retry {attempt+1}/2...")
-                    time.sleep(5)
-                    continue
-                else:
-                    print(f"Error verifying content: {e}")
-                    return None
-        return None
+        result, error = self._generate_with_fallback(prompt, is_json=True)
+        if result:
+            return result.get('content'), None
+        return None, error
 
     def spell_check_and_refine(self, content):
         """
-        Corrects spelling and grammar while maintaining HTML structure.
+        Corrects spelling and grammar.
         """
         prompt = f"""
         당신은 한국어 교열 전문가입니다.
@@ -157,19 +152,7 @@ class ContentGenerator:
             "content": "교정된 HTML 본문"
         }}
         """
-        # Retry logic for Quota limits (429 errors)
-        for attempt in range(2):
-            try:
-                response = self.model.generate_content(prompt, generation_config={"response_mime_type": "application/json"})
-                data = json.loads(response.text)
-                return data.get('content')
-            except Exception as e:
-                error_msg = str(e)
-                if "429" in error_msg or "ResourceExhausted" in error_msg:
-                    print(f"API Quota limit reached (429). Waiting 5 seconds before retry {attempt+1}/2...")
-                    time.sleep(5)
-                    continue
-                else:
-                    print(f"Error refining content: {e}")
-                    return None
-        return None
+        result, error = self._generate_with_fallback(prompt, is_json=True)
+        if result:
+            return result.get('content'), None
+        return None, error
