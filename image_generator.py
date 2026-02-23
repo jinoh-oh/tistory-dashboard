@@ -11,21 +11,20 @@ class ImageGenerator:
         """
         width, height = 800, 800
         # For AI prompts, we WANT to allow Korean if the user wants text on the image
-        raw_query = prompt if prompt else title
+        raw_query = prompt if prompt else f"Thumbnail with bold text '{title}'"
         
         # Sanitize lightly but keep non-ASCII for AI generation (it's part of the prompt)
-        # We only remove characters that could break the URL structure completely
-        clean_query = "".join([c for c in raw_query if c not in ['/', '\\', '?', '&', '#', '"', "'"]])
+        clean_query = "".join([c for c in raw_query if c not in ['/', '\\', '?', '&', '#', '"', "'", '.', ',']])
         
         if not clean_query.strip():
             clean_query = "professional blog thumbnail"
             
-        search_query = clean_query[:300].strip() # Allow longer prompts for detailed style
-        encoded_prompt = urllib.parse.quote(search_query)
+        # VERY IMPORTANT: Shorten to 100 chars max. Encoded non-ASCII is 3x length.
+        # Path segments > 256 or 512 chars often fail.
+        search_query = clean_query[:100].strip().replace(' ', '+')
         
         seed = random.randint(1, 1000000)
-        # style=thumbnail or similar doesn't exist, but prompt engineering handles it
-        return f"https://image.pollinations.ai/prompt/{encoded_prompt}?width={width}&height={height}&nologo=true&seed={seed}&enhance=true"
+        return f"https://image.pollinations.ai/prompt/{search_query}?width={width}&height={height}&nologo=true&seed={seed}&enhance=true"
 
     def get_stock_image_url(self, title, keywords=None):
         """

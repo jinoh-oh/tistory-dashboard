@@ -52,7 +52,7 @@ TEMPLATE_BASIC = """
     "title": "SEO 최적화된 제목 (키워드 포함)",
     "content": "위 규칙을 모두 반영한 HTML 코드 (이모지 없음)",
     "tags": ["태그1", "태그2", "태그3", "태그4", "태그5"],
-    "image_prompt": "A professional blog thumbnail with bold Korean text '{topic}' large in the center. Vibrant solid background, high contrast, catchy graphic design, minimalist vector style, 8k resolution, premium look.",
+    "image_prompt": "A professional digital thumbnail for Korean blog, central bold typography of '{topic}' in Korean. High contrast, vibrant solid background, minimalist vector art, premium quality, 8k resolution.",
     "image_keywords": "diet, fitness"
 }}
 """
@@ -173,7 +173,7 @@ TEMPLATE_HTML = """
     "title": "SEO 최적화된 제목",
     "content": "위 HTML 템플릿에 내용을 채운 결과 코드",
     "tags": ["태그1", "태그2", "태그3", "태그4", "태그5"],
-    "image_prompt": "Professional YouTube style thumbnail with bold Korean text '{topic}' prominently centered. Bright vibrant colors, high contrast, clean minimalist graphic design.",
+    "image_prompt": "Professional YouTube style thumbnail, very large bold Korean text '{topic}' in the center. Bright vibrant color palette, high contrast, clean modern graphic design.",
     "image_keywords": "diet"
 }}
 """
