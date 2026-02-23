@@ -31,19 +31,25 @@ class ImageGenerator:
         filepath = os.path.join(self.output_dir, filename)
 
         try:
-            # Download the image
-            response = requests.get(image_url, timeout=20)
-            if response.status_code == 200:
-                with open(filepath, 'wb') as f:
-                    f.write(response.content)
-                return filepath
-            else:
-                raise Exception(f"Failed to download image: {response.status_code}")
+            # Download the image with a few retries for Pollinations.ai
+            for attempt in range(2):
+                try:
+                    response = requests.get(image_url, timeout=12)
+                    if response.status_code == 200:
+                        with open(filepath, 'wb') as f:
+                            f.write(response.content)
+                        return filepath
+                    print(f"Image generation attempt {attempt+1} failed with status {response.status_code}")
+                except requests.exceptions.Timeout:
+                    print(f"Image generation attempt {attempt+1} timed out.")
+                
+            raise Exception("All image generation attempts failed.")
+            
         except Exception as e:
             print(f"AI Image Generation Error: {e}")
-            # Fallback: Create a simple placeholder if external service fails
+            # Final Fallback: Check if a solid color box is actually what's happening
             from PIL import Image
-            fallback_color = (random.randint(50, 150), random.randint(50, 150), random.randint(50, 150))
+            fallback_color = (random.randint(40, 100), random.randint(40, 100), random.randint(40, 100))
             img = Image.new('RGB', (width, height), fallback_color)
             img.save(filepath)
             return filepath
