@@ -18,8 +18,9 @@ class ContentGenerator:
             HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
         }
 
+        # Use a model confirmed to be available and robust
         self.model = genai.GenerativeModel(
-            model_name='gemini-1.5-flash-latest',
+            model_name='gemini-1.5-flash',
             safety_settings=safety_settings
         )
         self.system_instruction = """
