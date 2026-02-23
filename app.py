@@ -251,7 +251,25 @@ def main():
                 # Image Action Buttons
                 c1, c2 = st.columns(2)
                 with c1:
-                    st.link_button("🔗 이미지 크게 보기/저장", image_path, use_container_width=True)
+                    if image_path.startswith("data:image/svg"):
+                        # For SVGs, use download button to avoid blank screen/browser blocks
+                        try:
+                            # Extract base64 and decode
+                            import base64
+                            header, encoded = image_path.split(",", 1)
+                            data = base64.b64decode(encoded)
+                            st.download_button(
+                                label="💾 이미지 컴퓨터에 저장",
+                                data=data,
+                                file_name=f"thumbnail_{int(time.time())}.svg",
+                                mime="image/svg+xml",
+                                use_container_width=True
+                            )
+                        except Exception:
+                            st.link_button("🔗 이미지 크게 보기", image_path, use_container_width=True)
+                    else:
+                        # For stock photos (Unsplash), use link button
+                        st.link_button("🔗 이미지 크게 보기/저장", image_path, use_container_width=True)
                 
                 with c2:
                     if st.button("🔄 새로운 색상/배경으로 변경", type="primary", use_container_width=True):
