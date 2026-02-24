@@ -60,9 +60,12 @@ def generate_blog_post(topic, prompt_template, api_key=None, selected_model=None
     with st.spinner('🎨 AI가 주제와 관련된 이미지를 생성하고 있습니다...'):
         image_gen = ImageGenerator()
         try:
-            # Prefer the concise thumbnail_title for SVG thumbnails
-            display_title = blog_data.get('thumbnail_title', blog_data['title'])
-            image_url = image_gen.get_image_url(display_title, blog_data.get('image_prompt'))
+            # Pass keywords to improve relevance
+            image_url = image_gen.get_image_url(
+                display_title, 
+                prompt=blog_data.get('image_prompt'),
+                keywords=blog_data.get('image_keywords')
+            )
         except Exception as e:
             st.error(f"이미지 URL 생성 실패: {e}")
             image_url = None
@@ -401,7 +404,9 @@ def main():
                         st.rerun()
                 
                 with f_col2:
-                    if st.button("🖼️ 고화질 스톡 사진 (Unsplash)", use_container_width=True):
+                    # Show keywords being used for transparency
+                    kw_to_show = blog_data.get('image_keywords', blog_data['title'])
+                    if st.button("🖼️ 고화질 스톡 사진 (관련 이미지)", use_container_width=True, help=f"검색어: {kw_to_show}"):
                         image_gen = ImageGenerator()
                         st.session_state['image_path'] = image_gen.get_stock_image_url(
                             blog_data['title'], 

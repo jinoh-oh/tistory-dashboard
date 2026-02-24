@@ -111,8 +111,7 @@ class ImageGenerator:
         
         # 2. Text Preparation
         display_text = text.strip()
-        if not display_text.endswith(">"):
-            display_text += " >"
+        # [REMOVED] decorative '>' as per user request
             
         # 3. Smart Font Discovery
         font_paths = self._find_system_fonts()
@@ -187,38 +186,46 @@ class ImageGenerator:
 
     def translate_keyword(self, text):
         """
-        Maps Korean terms to English for stock photo relevance.
-        Prioritizes semantic meaning over literal translation.
+        Maps Korean/English terms to searchable tags.
+        Prioritizes subjects and handles lists.
         """
-        if not text: return "lifestyle"
+        if not text: return "furniture"
         
+        # 1. Check for Korean topics first
         text_lower = text.lower()
-        # High relevance triggers
-        if "수면" in text_lower or "숙면" in text_lower: return "bed"
-        if "부종" in text_lower or "부은" in text_lower: return "spa"
-        if "다이어트" in text_lower: return "healthy"
-        if "운동" in text_lower or "헬스" in text_lower: return "workout"
+        if "수면" in text_lower or "숙면" in text_lower: return "bed,sleep"
+        if "부종" in text_lower or "부은" in text_lower: return "skincare"
+        if "다이어트" in text_lower: return "healthy food"
         
         for ko, en in self.COMMON_TOPICS.items():
             if ko in text_lower:
                 return en
-        # Fallback to first ASCII word or generic tag
-        clean = "".join([c if (c.isalpha() or c == ' ') else ' ' for c in text if ord(c) < 128])
-        parts = clean.split()
-        return parts[0] if parts else "nature"
+        
+        # 2. Process English keywords (Gemini output)
+        # Often looks like "Serene bedroom, deep sleep"
+        # We want "bedroom" or "sleep" but NOT "serene"
+        stop_words = ["serene", "deep", "peaceful", "beautiful", "good", "best", "the", "a", "an"]
+        
+        clean = "".join([c if (c.isalpha() or c == ',' or c == ' ') else ' ' for c in text if ord(c) < 128])
+        parts = []
+        for p in clean.replace(',', ' ').split():
+            p_clean = p.strip().lower()
+            if p_clean and p_clean not in stop_words and len(p_clean) > 2:
+                parts.append(p_clean)
+        
+        # Return top 2 keywords joined by comma for better Flickr matching
+        return ",".join(parts[:2]) if parts else "nature"
 
     def get_stock_image_url(self, title, keywords=None):
         """
         Returns a high-quality stock photo URL using LoremFlickr.
-        Reduces multi-keyword pollution for better visual relevance.
         """
         target = keywords if keywords else title
         kw = self.translate_keyword(target)
         
-        # LoremFlickr works best with single, strong keywords
-        primary_kw = kw.split(',')[0].strip()
+        # LoremFlickr format: /width/height/tag
         seed = random.randint(1, 1000)
-        return f"https://loremflickr.com/800/800/{urllib.parse.quote(primary_kw)}?lock={seed}"
+        return f"https://loremflickr.com/800/800/{urllib.parse.quote(kw)}?lock={seed}"
 
     def get_image_url(self, title, prompt=None, keywords=None, use_stock=False):
         """
