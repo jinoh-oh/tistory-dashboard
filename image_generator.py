@@ -39,32 +39,33 @@ class ImageGenerator:
         "sleep": "1541781774370-8a1d05b17ae7",  # Cozy bed
         "bedroom": "1512499617640-42f4731dec01", # Serene bedroom
         "night": "1519750744998-bfc048040c0c",   # Night window
-        "diet": "1490645935967-107d1e2s5160",    # Healthy salad
+        "diet": "1490645935967-107d1e2d5160",    # Healthy salad (Fixed ID)
         "healthy": "1498837167721-e011830efad3", # Fresh vegetables
         "weight loss": "1517833115132-ec377c8d710f", # Scale/Fitness
         "fitness": "1534438327245-c0517a1bb102",  # Running shoes/track
         "workout": "1534438327245-c0517a1bb102",  # Gym
         "stock": "1611974717521-4a43a7c1219d",    # Stock market charts
         "finance": "1579621973515-0178631c7fe3",  # Coins/Growth
-        "economy": "1459257255995-1f9999b4aex9",  # City buildings/Graph
+        "economy": "1459257255995-1f9999b4aef9",  # City buildings (Fixed ID)
         "tech": "1488590527370-d803d642610e",     # Laptop/Code
         "smartphone": "1511702199708-8687263636b6", # Modern phone
         "skincare": "155622857592f-b2f5606b4da8",  # Beauty/Spa
         "makeup": "1522335789203-a4c020c027de",   # Cosmetics
-        "food": "1476224203461-9c3c8s9b2acc",     # Generic delicious food
+        "food": "1476224203461-9c3c8b9b2acc",     # Generic delicious food (Fixed ID)
         "coffee": "1495474472287-4d71bcdd2085",   # Coffee cup
         "cafe": "1509042239035-0c83d5bd737b",     # Cafe interior
         "travel": "1469441996581-c93a958e03e1",   # Plane window/landscape
         "tourism": "1476610182121-5a3994e77501",  # Tourist map
-        "hotel": "1566073771279-63715s09170b",    # Luxury room
-        "parenting": "1510333302158-df3px760200e", # Parent and child
-        "baby": "1502441739563-36x24f3b7s4d",     # Cute baby
-        "money": "1589753191714-3d8s2c1456b3",    # Dollars
-        "success": "163361321631s-da1d4s9c1a2b",  # Mountain peak
-        "interior": "1616489959146-da3s9c1a2b3d", # Modern room
-        "medicine": "158436294614s-da1d4s9c1a2b", # Pills/Health
-        "swelling": "1519415943484-da3s9c1a2b3d", # Feet/Health
-        "doctor": "15329389110s9-da1d4s9c1a2b",  # Stethoscope
+        "hotel": "1566073771279-6a31s09170b",    # Luxury room (Fixed ID)
+        "parenting": "1510333302158-df3f3760200e", # Parent and child (Fixed ID)
+        "baby": "1502441739563-36c24f3b7s4d",     # Cute baby (Fixed ID)
+        "money": "1589753191714-3d12c1456b3a",    # Dollars (Fixed ID)
+        "success": "1633613216315-da1d4s9c1a2b",  # Mountain peak (Fixed ID)
+        "interior": "1616489959146-da3b9c1a2b3d", # Modern room (Fixed ID)
+        "medicine": "1584362946141-da1d4s9c1a2b", # Pills/Health (Fixed ID)
+        "swelling": "1519415943484-da3b9c1a2b3d", # Feet/Health (Fixed ID)
+        "doctor": "15329389110d9-da1d4s9c1a2b",  # Stethoscope (Fixed ID)
+        "salt": "1554160100-83ea0e63789d",        # Salt/Seasoning (New)
     }
 
     # Hardcoded mapping for common Korean blog topics to ensure relevance
@@ -80,7 +81,8 @@ class ImageGenerator:
         "부업": "money", "수익": "money", "자기계발": "success",
         "수면": "sleep", "숙면": "bedroom", "불면증": "night",
         "부종": "swelling", "붓기": "swelling", "혈액순환": "medicine",
-        "커피": "coffee", "카페": "cafe", "인테리어": "interior"
+        "커피": "coffee", "카페": "cafe", "인테리어": "interior",
+        "저염식": "salt", "나트륨": "salt", "소금": "salt"
     }
 
     def _find_system_fonts(self):
@@ -143,7 +145,7 @@ class ImageGenerator:
         draw = ImageDraw.Draw(img)
         
         # 2. Text Preparation
-        display_text = text.strip()
+        display_text = text.replace(">", "").strip()
         # [REMOVED] decorative '>' as per user request
             
         # 3. Smart Font Discovery

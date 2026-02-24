@@ -228,8 +228,20 @@ def main():
                 st.rerun()
             else:
                 # Built-in template, suggest saving as new
-                st.info("기본 서식은 수정할 수 없습니다. 아래 '🚀 서식 추가/관리' 메뉴에서 새 이름으로 저장해 주세요.")
-                st.session_state['new_prompt_from_edit'] = user_template
+                st.info("기본 서식입니다. 수정한 내용을 새 서식으로 저장하려면 이름을 입력해 주세요.")
+                new_save_name = st.text_input("새 서식 이름 입력", key="new_save_name_editor", placeholder="예: 나만의 수익형 서식")
+                if st.button("💾 새 서식으로 저장", use_container_width=True, key="save_as_new_btn"):
+                    if new_save_name and user_template:
+                        if "{topic}" not in user_template:
+                            st.error("{topic} 키워드가 프롬프트에 포함되어야 합니다.")
+                        else:
+                            custom_templates[new_save_name] = user_template
+                            save_custom_templates(custom_templates)
+                            st.success(f"'{new_save_name}' 서식이 저장되었습니다.")
+                            st.session_state['new_prompt_from_edit'] = ""
+                            st.rerun()
+                    else:
+                        st.warning("새 서식의 이름을 입력해 주세요.")
     st.divider()
     topic = st.text_input("블로그 주제를 입력하세요", placeholder="예: 2026년 해외여행 추천지, 다이어트 식단 가이드")
     
