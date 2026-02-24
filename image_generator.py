@@ -65,16 +65,26 @@ class ImageGenerator:
         if not display_text.endswith(">"):
             display_text += " >"
             
-        # 3. Dynamic Font Discovery & Fallback
-        font_paths = self._find_system_fonts()
-        font_paths.append("arial.ttf") # ASCII fallback
+        # 3. Force Priority Font Path
+        priority_paths = [
+            r"C:\Windows\Fonts\malgunbd.ttf",
+            r"C:\Windows\Fonts\malgun.ttf",
+            r"C:\Windows\Fonts\gulim.ttc",
+            r"C:\Windows\Fonts\batang.ttc"
+        ]
+        
+        # Add dynamically found fonts
+        font_paths = priority_paths + self._find_system_fonts()
+        font_paths.append("arial.ttf") 
         
         font = None
         font_size = 100
         for f_path in font_paths:
             try:
-                font = ImageFont.truetype(f_path, font_size)
-                break
+                if os.path.exists(f_path):
+                    # Handle .ttc by taking the first font in the collection
+                    font = ImageFont.truetype(f_path, font_size)
+                    break
             except Exception:
                 continue
         
@@ -86,7 +96,7 @@ class ImageGenerator:
         lines = []
         current_line = ""
         for word in words:
-            if len(current_line + word) <= 10: # Balanced length
+            if len(current_line + word) <= 8: # Tighter wrap for large fonts
                 current_line += (word + " ")
             else:
                 if current_line: lines.append(current_line.strip())
@@ -95,29 +105,25 @@ class ImageGenerator:
         lines = lines[:3]
         
         # 5. Draw Text with Strong Outline (Premium YouTube Style)
-        line_height = 130
+        line_height = 135
         total_text_height = len(lines) * line_height
         start_y = (size - total_text_height) // 2
         
         for i, line in enumerate(lines):
             # Calculate centering
             try:
-                # Pillow >= 10.0 method
                 left, top, right, bottom = draw.textbbox((0, 0), line, font=font)
                 w = right - left
             except AttributeError:
-                # Older Pillow fallback
                 w = draw.textlength(line, font=font)
                 
             x = (size - w) // 2
             y = start_y + (i * line_height)
             
-            # Thick Outline for readability
-            outline_thickness = 5
-            for dx in range(-outline_thickness, outline_thickness + 1):
-                for dy in range(-outline_thickness, outline_thickness + 1):
-                    if dx != 0 or dy != 0:
-                        draw.text((x+dx, y+dy), line, fill="black", font=font)
+            # Ultra Thick Outline for maximum readability on complex backgrounds
+            for dx in range(-8, 9, 2):
+                for dy in range(-8, 9, 2):
+                    draw.text((x+dx, y+dy), line, fill="black", font=font)
             
             # Main Bold Text
             draw.text((x, y), line, fill="white", font=font)
@@ -132,30 +138,27 @@ class ImageGenerator:
         """
         Maps common Korean terms to English for stock photo relevance.
         """
-        if not text: return "lifestyle"
+        if not text: return "nature"
         text_lower = text.lower()
         for ko, en in self.COMMON_TOPICS.items():
             if ko in text_lower:
                 return en
-        # Fallback: Extract first ASCII word
+        # Extract first ASCII word
         clean = "".join([c if (c.isalpha() or c == ' ') else ' ' for c in text if ord(c) < 128])
         parts = clean.split()
-        return parts[0] if parts else "nature"
+        return parts[0] if parts else "lifestyle"
 
     def get_stock_image_url(self, title, keywords=None):
         """
-        Returns a high-quality stock photo URL.
-        Using Unsplash with refined keyword logic for better relevance.
+        Returns a high-quality stock photo URL using LoremFlickr (highly reliable).
         """
         target = keywords if keywords else title
         kw = self.translate_keyword(target)
         
-        # Add lifestyle/minimal anchors to ensure professional-looking stock photos
-        search_kw = f"{kw},lifestyle,nature"
+        # LoremFlickr format: https://loremflickr.com/800/800/keyword
+        # It's very stable and doesn't 503 like Unsplash Source often does
         seed = random.randint(1, 1000)
-        
-        # Reverting to Unsplash Source with more specific query structure
-        return f"https://source.unsplash.com/featured/800x800?{urllib.parse.quote(search_kw)}&sig={seed}"
+        return f"https://loremflickr.com/800/800/{urllib.parse.quote(kw)}?lock={seed}"
 
     def get_image_url(self, title, prompt=None, keywords=None, use_stock=False):
         """

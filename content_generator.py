@@ -117,9 +117,20 @@ class ContentGenerator:
         }}
         """
         data, error = self._generate_with_fallback(full_prompt, is_json=True)
-        if data and 'content' in data:
-            data['content'] = self._clean_residue(data['content'])
+        if data:
+            if 'title' in data:
+                data['title'] = self._strip_html(data['title'])
+            if 'content' in data:
+                data['content'] = self._clean_residue(data['content'])
         return data, error
+
+    def _strip_html(self, text):
+        """
+        Removes HTML tags from a string.
+        """
+        if not text: return text
+        clean = re.compile('<.*?>')
+        return re.sub(clean, '', text).strip()
 
     def _clean_residue(self, text):
         """
