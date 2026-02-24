@@ -60,6 +60,9 @@ def generate_blog_post(topic, prompt_template, api_key=None, selected_model=None
     with st.spinner('🎨 AI가 주제와 관련된 이미지를 생성하고 있습니다...'):
         image_gen = ImageGenerator()
         try:
+            # Prefer the concise thumbnail_title for thumbnails
+            display_title = blog_data.get('thumbnail_title', blog_data['title'])
+            
             # Pass keywords to improve relevance
             image_url = image_gen.get_image_url(
                 display_title, 
