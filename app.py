@@ -222,6 +222,10 @@ def main():
         blog_data, image_path, error_message = generate_blog_post(topic, user_template, api_key=active_api_key, selected_model=active_model)
         
         if blog_data:
+            if 'content' not in blog_data:
+                st.error("AI 응답 형식이 올바르지 않습니다. (본문 내용 누락) 다시 시도해 주세요.")
+                return
+                
             st.session_state['blog_data'] = blog_data
             st.session_state['image_path'] = image_path
             st.session_state['generated'] = True
@@ -278,7 +282,8 @@ def main():
                             st.error(f"맞춤법 교정에 실패했습니다. 원인: {error_msg}")
 
         with act_col2:
-            counts = get_word_count_details(blog_data['content'])
+            content_to_count = blog_data.get('content', '')
+            counts = get_word_count_details(content_to_count)
             # Modern word count display
             st.markdown(f"""
             <div style="background-color: #f8f9fa; padding: 10px; border-radius: 8px; border: 1px solid #dee2e6;">

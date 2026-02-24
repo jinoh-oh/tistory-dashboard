@@ -18,6 +18,31 @@ class ImageGenerator:
         "부업": "side hustle", "수익": "money", "자기계발": "success"
     }
 
+    def _find_system_fonts(self):
+        """
+        Intelligently finds available Korean fonts on Windows.
+        """
+        import os
+        import glob
+        
+        search_patterns = [
+            r"C:\Windows\Fonts\malgun*.t*", 
+            r"C:\Windows\Fonts\gulim.t*", 
+            r"C:\Windows\Fonts\batang.t*",
+            r"C:\Windows\Fonts\dotum.t*",
+            r"C:\Windows\Fonts\Nanum*.t*"
+        ]
+        
+        found_fonts = []
+        for pattern in search_patterns:
+            matches = glob.glob(pattern)
+            if matches:
+                # Prioritize bold versions if available
+                bold_matches = [m for m in matches if 'bd' in m.lower() or 'bold' in m.lower()]
+                found_fonts.extend(bold_matches if bold_matches else matches)
+        
+        return list(dict.fromkeys(found_fonts)) # Deduplicate
+
     def get_jpg_thumbnail(self, text):
         """
         Generates a 800x800 JPG thumbnail using Pillow for Tistory compatibility.
@@ -30,7 +55,7 @@ class ImageGenerator:
         
         # 1. Setup Canvas
         size = 800
-        colors = ["#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#06b6d4"]
+        colors = ["#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#06b6d4", "#f43f5e", "#10b981"]
         bg_hex = random.choice(colors)
         img = Image.new('RGB', (size, size), color=bg_hex)
         draw = ImageDraw.Draw(img)
@@ -40,22 +65,16 @@ class ImageGenerator:
         if not display_text.endswith(">"):
             display_text += " >"
             
-        # 3. Robust Font Fallback (Crucial for Korean rendering)
-        possible_fonts = [
-            r"C:\Windows\Fonts\malgunbd.ttf", 
-            r"C:\Windows\Fonts\malgun.ttf", 
-            r"C:\Windows\Fonts\malgun.ttc",
-            r"C:\Windows\Fonts\gulim.ttc",
-            "malgun.ttf", "gulim.ttc", "arial.ttf"
-        ]
+        # 3. Dynamic Font Discovery & Fallback
+        font_paths = self._find_system_fonts()
+        font_paths.append("arial.ttf") # ASCII fallback
         
         font = None
         font_size = 100
-        for f_path in possible_fonts:
+        for f_path in font_paths:
             try:
-                if os.path.exists(f_path) or not f_path.startswith("C:"):
-                    font = ImageFont.truetype(f_path, font_size)
-                    break
+                font = ImageFont.truetype(f_path, font_size)
+                break
             except Exception:
                 continue
         

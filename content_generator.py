@@ -99,8 +99,38 @@ class ContentGenerator:
         except Exception:
             prompt = f"Topic: {topic}\n\n" + prompt_template
  
-        full_prompt = f"{self.system_instruction}\n\n[USER REQUEST]\n{prompt}\n\n⚠️ 중요: 반드시 한글 1,600자 이상의 충분한 분량으로 작성하세요."
-        return self._generate_with_fallback(full_prompt, is_json=True)
+        full_prompt = f"""
+        {self.system_instruction}
+        
+        [USER REQUEST]
+        {prompt}
+        
+        ⚠️ [CRITICAL: OUTPUT FORMAT]
+        반드시 아래의 JSON 형식을 엄격히 준수하여 응답하세요. 다른 텍스트 설명은 포함하지 마세요.
+        {{
+            "title": "SEO 최적화된 제목",
+            "thumbnail_title": "이미지에 들어갈 핵심 키워드 + ' >'",
+            "content": "HTML 형식의 본문 내용 (한글 1,600자 이상)",
+            "tags": ["태그1", "태그2", "태그3", "태그4", "태그5"],
+            "image_prompt": "이미지 생성을 위한 상세 영어 프롬프트",
+            "image_keywords": "이미지 테마 영문 키워드 2-3개"
+        }}
+        """
+        data, error = self._generate_with_fallback(full_prompt, is_json=True)
+        if data and 'content' in data:
+            data['content'] = self._clean_residue(data['content'])
+        return data, error
+
+    def _clean_residue(self, text):
+        """
+        Removes accidentally leaked JSON characters (like }} ] }) and backticks from HTML content.
+        """
+        if not text: return text
+        # Remove trailing JSON-like characters that AI sometimes leaks
+        cleaned = re.sub(r'\s*[}\]])+\s*$', '', text.strip())
+        # Remove triple backticks if still present
+        cleaned = cleaned.replace("```html", "").replace("```", "").strip()
+        return cleaned
 
     def verify_and_rewrite(self, content, topic):
         """
@@ -120,14 +150,11 @@ class ContentGenerator:
         {content}
 
         [건의]
-        반드시 JSON 형식으로 반환하세요:
-        {{
-            "content": "수정 및 보완된 HTML 본문"
-        }}
+        반드시 JSON 형식으로 반환하세요. "content" 필드에 HTML을 담으세요.
         """
         result, error = self._generate_with_fallback(prompt, is_json=True)
         if result:
-            return result.get('content'), None
+            return self._clean_residue(result.get('content')), None
         return None, error
 
     def spell_check_and_refine(self, content):
@@ -147,12 +174,9 @@ class ContentGenerator:
         {content}
 
         [건의]
-        반드시 JSON 형식으로 반환하세요:
-        {{
-            "content": "교정된 HTML 본문"
-        }}
+        반드시 JSON 형식으로 반환하세요. "content" 필드에 HTML을 담으세요.
         """
         result, error = self._generate_with_fallback(prompt, is_json=True)
         if result:
-            return result.get('content'), None
+            return self._clean_residue(result.get('content')), None
         return None, error
