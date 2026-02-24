@@ -6,6 +6,10 @@ import os
 import templates
 import re
 import urllib.parse
+import time
+import base64
+import requests
+import io
 
 # Page Config
 st.set_page_config(
@@ -244,7 +248,7 @@ def main():
                 
                 # Keyword control for Stock Photos
                 current_kw = blog_data.get('image_keywords', 'nature')
-                new_kw = st.text_input("🖼️ 스톡 사진 검색어 (고양이가 나오면 수정하세요)", value=current_kw)
+                new_kw = st.text_input("🖼️ 이미지 강조 키워드 (영문)", value=current_kw, help="스톡 사진 검색 시 사용될 키워드입니다. 콤마(,)로 구분하세요.")
                 if new_kw != current_kw:
                     blog_data['image_keywords'] = new_kw
 
@@ -252,14 +256,12 @@ def main():
                 c1, c2 = st.columns(2)
                 with c1:
                     if image_path.startswith("data:image/svg"):
-                        # For SVGs, use download button to avoid blank screen/browser blocks
+                        # For SVGs, use download button
                         try:
-                            # Extract base64 and decode
-                            import base64
                             header, encoded = image_path.split(",", 1)
                             data = base64.b64decode(encoded)
                             st.download_button(
-                                label="💾 이미지 컴퓨터에 저장",
+                                label="💾 이미지 컴퓨터에 저장 (SVG)",
                                 data=data,
                                 file_name=f"thumbnail_{int(time.time())}.svg",
                                 mime="image/svg+xml",
@@ -268,8 +270,21 @@ def main():
                         except Exception:
                             st.link_button("🔗 이미지 크게 보기", image_path, use_container_width=True)
                     else:
-                        # For stock photos (Unsplash), use link button
-                        st.link_button("🔗 이미지 크게 보기/저장", image_path, use_container_width=True)
+                        # For stock photos (Unsplash/JPG), fetch and provide direct download
+                        try:
+                            response = requests.get(image_path, timeout=10)
+                            if response.status_code == 200:
+                                st.download_button(
+                                    label="💾 JPG 이미지 컴퓨터에 저장",
+                                    data=response.content,
+                                    file_name=f"stock_image_{int(time.time())}.jpg",
+                                    mime="image/jpeg",
+                                    use_container_width=True
+                                )
+                            else:
+                                st.link_button("🔗 원본 이미지 크게 보기/저장", image_path, use_container_width=True)
+                        except Exception:
+                            st.link_button("🔗 원본 이미지 크게 보기/저장", image_path, use_container_width=True)
                 
                 with c2:
                     if st.button("🔄 새로운 색상/배경으로 변경", type="primary", use_container_width=True):
