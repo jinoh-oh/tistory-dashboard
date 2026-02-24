@@ -184,6 +184,17 @@ def main():
                         st.success(f"'{del_title}' 서식이 삭제되었습니다.")
                         st.rerun()
 
+            st.divider()
+            st.markdown("### 📥 서식 구성 가이드")
+            st.info("새 서식을 만들 때 아래 예시를 복사해서 수정해 보세요.")
+            guide_example = """당신은 티스토리 블로그 전문가입니다. 
+주제: "{topic}"에 대해 작성하세요.
+1. 말투: 친절한 해요체
+2. 필수 포함: 서론, 본문 제목(h2), 결론
+3. 분량: 매우 길게 작성"""
+            st.code(guide_example, language="text")
+            st.caption("⚠️ {topic} 이 반드시 포함되어야 합니다.")
+
         if template_choice == "수익형 HTML 템플릿 (코드 복붙용)":
             default_template = templates.TEMPLATE_HTML
         elif template_choice == "수익형 블로그 규칙 (가이드라인)":

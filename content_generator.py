@@ -127,7 +127,7 @@ class ContentGenerator:
         """
         if not text: return text
         # Remove trailing JSON-like characters that AI sometimes leaks
-        cleaned = re.sub(r'\s*[}\]])+\s*$', '', text.strip())
+        cleaned = re.sub(r'\s*[}\]]+\s*$', '', text.strip())
         # Remove triple backticks if still present
         cleaned = cleaned.replace("```html", "").replace("```", "").strip()
         return cleaned
