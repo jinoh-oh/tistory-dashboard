@@ -20,33 +20,47 @@ class ImageGenerator:
 
     def _find_system_fonts(self):
         """
-        Intelligently finds available Korean fonts on Windows.
+        Dynamically finds available Korean-supporting fonts on Windows and Linux (Streamlit Cloud).
         """
         import os
         import glob
         
-        search_patterns = [
-            r"C:\Windows\Fonts\malgun*.t*", 
-            r"C:\Windows\Fonts\gulim.t*", 
-            r"C:\Windows\Fonts\batang.t*",
-            r"C:\Windows\Fonts\dotum.t*",
-            r"C:\Windows\Fonts\Nanum*.t*"
+        # Paths to search based on OS
+        search_dirs = []
+        if os.name == 'nt': # Windows
+            search_dirs = [r"C:\Windows\Fonts"]
+        else: # Linux / Streamlit Cloud
+            search_dirs = [
+                "/usr/share/fonts",
+                "/usr/local/share/fonts",
+                "~/.fonts"
+            ]
+        
+        patterns = [
+            "*malgun*", "*nanum*", "*gulim*", "*dotum*", "*batang*",
+            "*noto*korean*", "*noto*cjk*", "*unfonts*", "*baekmuk*"
         ]
         
         found_fonts = []
-        for pattern in search_patterns:
-            matches = glob.glob(pattern)
-            if matches:
-                # Prioritize bold versions if available
-                bold_matches = [m for m in matches if 'bd' in m.lower() or 'bold' in m.lower()]
-                found_fonts.extend(bold_matches if bold_matches else matches)
+        for d in search_dirs:
+            d = os.path.expanduser(d)
+            if not os.path.exists(d): continue
+            
+            for p in patterns:
+                # Recursive search for .ttf and .ttc
+                full_pattern = os.path.join(d, "**", p + ".t*")
+                matches = glob.glob(full_pattern, recursive=True)
+                if matches:
+                    # Prioritize bold or medium weights
+                    priority = [m for m in matches if any(x in m.lower() for x in ['bold', 'bd', 'medium', 'eb'])]
+                    found_fonts.extend(priority if priority else matches)
         
         return list(dict.fromkeys(found_fonts)) # Deduplicate
 
     def get_jpg_thumbnail(self, text):
         """
         Generates a 800x800 JPG thumbnail using Pillow for Tistory compatibility.
-        Features high-quality Korean typography and visual polish.
+        Works across Windows and Linux (Streamlit Cloud).
         """
         from PIL import Image, ImageDraw, ImageFont
         import io
@@ -55,7 +69,8 @@ class ImageGenerator:
         
         # 1. Setup Canvas
         size = 800
-        colors = ["#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#06b6d4", "#f43f5e", "#10b981"]
+        # Vibrant colors that work well with white text
+        colors = ["#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#06b6d4", "#f43f5e", "#6366f1"]
         bg_hex = random.choice(colors)
         img = Image.new('RGB', (size, size), color=bg_hex)
         draw = ImageDraw.Draw(img)
@@ -65,38 +80,41 @@ class ImageGenerator:
         if not display_text.endswith(">"):
             display_text += " >"
             
-        # 3. Force Priority Font Path
-        priority_paths = [
-            r"C:\Windows\Fonts\malgunbd.ttf",
-            r"C:\Windows\Fonts\malgun.ttf",
-            r"C:\Windows\Fonts\gulim.ttc",
-            r"C:\Windows\Fonts\batang.ttc"
-        ]
-        
-        # Add dynamically found fonts
-        font_paths = priority_paths + self._find_system_fonts()
-        font_paths.append("arial.ttf") 
+        # 3. Smart Font Discovery
+        font_paths = self._find_system_fonts()
         
         font = None
-        font_size = 100
+        font_size = 110 # Premium large size
+        
         for f_path in font_paths:
             try:
-                if os.path.exists(f_path):
-                    # Handle .ttc by taking the first font in the collection
-                    font = ImageFont.truetype(f_path, font_size)
-                    break
+                font = ImageFont.truetype(f_path, font_size)
+                break
             except Exception:
                 continue
         
         if not font:
+            # Last ditch effort for Linux (Streamlit Cloud)
+            linux_fallbacks = [
+                "/usr/share/fonts/truetype/nanum/NanumGothicBold.ttf",
+                "/usr/share/fonts/truetype/noto/NotoSansCJK-Bold.ttc"
+            ]
+            for lf in linux_fallbacks:
+                try:
+                    if os.path.exists(lf):
+                        font = ImageFont.truetype(lf, font_size)
+                        break
+                except: continue
+        
+        if not font:
             font = ImageFont.load_default()
             
-        # 4. Word Wrap (Max 3 lines, max 8 chars per line)
+        # 4. Word Wrap (Max 3 lines, tight wrap)
         words = display_text.split()
         lines = []
         current_line = ""
         for word in words:
-            if len(current_line + word) <= 8: # Tighter wrap for large fonts
+            if len(current_line + word) <= 7: 
                 current_line += (word + " ")
             else:
                 if current_line: lines.append(current_line.strip())
@@ -104,13 +122,12 @@ class ImageGenerator:
         if current_line: lines.append(current_line.strip())
         lines = lines[:3]
         
-        # 5. Draw Text with Strong Outline (Premium YouTube Style)
-        line_height = 135
+        # 5. Draw Text with "Glow" Outline (Premium YouTube Style)
+        line_height = 145
         total_text_height = len(lines) * line_height
         start_y = (size - total_text_height) // 2
         
         for i, line in enumerate(lines):
-            # Calculate centering
             try:
                 left, top, right, bottom = draw.textbbox((0, 0), line, font=font)
                 w = right - left
@@ -120,10 +137,10 @@ class ImageGenerator:
             x = (size - w) // 2
             y = start_y + (i * line_height)
             
-            # Ultra Thick Outline for maximum readability on complex backgrounds
-            for dx in range(-8, 9, 2):
-                for dy in range(-8, 9, 2):
-                    draw.text((x+dx, y+dy), line, fill="black", font=font)
+            # Ultra Thick Shadow for maximum legibility
+            for dx in range(-6, 7, 2):
+                for dy in range(-6, 7, 2):
+                    draw.text((x+dx, y+dy), line, fill="#111111", font=font)
             
             # Main Bold Text
             draw.text((x, y), line, fill="white", font=font)
@@ -136,29 +153,38 @@ class ImageGenerator:
 
     def translate_keyword(self, text):
         """
-        Maps common Korean terms to English for stock photo relevance.
+        Maps Korean terms to English for stock photo relevance.
+        Prioritizes semantic meaning over literal translation.
         """
-        if not text: return "nature"
+        if not text: return "lifestyle"
+        
         text_lower = text.lower()
+        # High relevance triggers
+        if "수면" in text_lower or "숙면" in text_lower: return "bed"
+        if "부종" in text_lower or "부은" in text_lower: return "spa"
+        if "다이어트" in text_lower: return "healthy"
+        if "운동" in text_lower or "헬스" in text_lower: return "workout"
+        
         for ko, en in self.COMMON_TOPICS.items():
             if ko in text_lower:
                 return en
-        # Extract first ASCII word
+        # Fallback to first ASCII word or generic tag
         clean = "".join([c if (c.isalpha() or c == ' ') else ' ' for c in text if ord(c) < 128])
         parts = clean.split()
-        return parts[0] if parts else "lifestyle"
+        return parts[0] if parts else "nature"
 
     def get_stock_image_url(self, title, keywords=None):
         """
-        Returns a high-quality stock photo URL using LoremFlickr (highly reliable).
+        Returns a high-quality stock photo URL using LoremFlickr.
+        Reduces multi-keyword pollution for better visual relevance.
         """
         target = keywords if keywords else title
         kw = self.translate_keyword(target)
         
-        # LoremFlickr format: https://loremflickr.com/800/800/keyword
-        # It's very stable and doesn't 503 like Unsplash Source often does
+        # LoremFlickr works best with single, strong keywords
+        primary_kw = kw.split(',')[0].strip()
         seed = random.randint(1, 1000)
-        return f"https://loremflickr.com/800/800/{urllib.parse.quote(kw)}?lock={seed}"
+        return f"https://loremflickr.com/800/800/{urllib.parse.quote(primary_kw)}?lock={seed}"
 
     def get_image_url(self, title, prompt=None, keywords=None, use_stock=False):
         """

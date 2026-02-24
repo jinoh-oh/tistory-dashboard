@@ -127,9 +127,11 @@ class ContentGenerator:
     def _strip_html(self, text):
         """
         Removes HTML tags from a string.
+        Robust to multi-line tags and edge cases.
         """
         if not text: return text
-        clean = re.compile('<.*?>')
+        # Use a more robust regex for all tags including multi-line
+        clean = re.compile(r'<[^>]*>', re.DOTALL)
         return re.sub(clean, '', text).strip()
 
     def _clean_residue(self, text):
