@@ -10,6 +10,8 @@ import time
 import base64
 import requests
 import io
+import json
+import streamlit.components.v1 as components
 
 # Page Config
 st.set_page_config(
@@ -129,16 +131,65 @@ def main():
         
         st.divider()
         st.header("📝 서식 선택")
-        # ... (rest of sidebar code stays similar)
+        
+        # Load custom templates
+        CUSTOM_TEMPLATES_FILE = "custom_templates.json"
+        def load_custom_templates():
+            if os.path.exists(CUSTOM_TEMPLATES_FILE):
+                with open(CUSTOM_TEMPLATES_FILE, "r", encoding="utf-8") as f:
+                    try:
+                        return json.load(f)
+                    except:
+                        return {}
+            return {}
+
+        def save_custom_templates(templates_dict):
+            with open(CUSTOM_TEMPLATES_FILE, "w", encoding="utf-8") as f:
+                json.dump(templates_dict, f, ensure_ascii=False, indent=4)
+
+        custom_templates = load_custom_templates()
+        
+        # Merge built-in and custom templates
+        builtin_names = ("수익형 HTML 템플릿 (코드 복붙용)", "수익형 블로그 규칙 (가이드라인)")
+        all_template_names = builtin_names + tuple(custom_templates.keys())
+        
         template_choice = st.selectbox(
             "사용할 서식을 선택하세요:",
-            ("수익형 HTML 템플릿 (코드 복붙용)", "수익형 블로그 규칙 (가이드라인)")
+            all_template_names
         )
         
+        # Sidebar Management UI
+        with st.expander("🚀 서식 추가/관리"):
+            new_title = st.text_input("새 서식 이름", placeholder="예: 맛집 리뷰 서식")
+            new_prompt = st.text_area("서식 프롬프트 ( {topic} 포함 필수 )", height=150, help="AI에게 전달할 상세 지시사항을 입력하세요. 주제가 들어갈 자리에 {topic}을 넣어주세요.")
+            if st.button("➕ 서식 저장", use_container_width=True):
+                if new_title and new_prompt:
+                    if "{topic}" not in new_prompt:
+                        st.error("{topic} 키워드가 프롬프트에 포함되어야 합니다.")
+                    else:
+                        custom_templates[new_title] = new_prompt
+                        save_custom_templates(custom_templates)
+                        st.success(f"'{new_title}' 서식이 저장되었습니다.")
+                        st.rerun()
+                else:
+                    st.warning("이름과 프롬프트를 모두 입력해주세요.")
+            
+            if len(custom_templates) > 0:
+                st.divider()
+                del_title = st.selectbox("삭제할 서식 선택", tuple(custom_templates.keys()))
+                if st.button("🗑️ 서식 삭제", use_container_width=True):
+                    if del_title in custom_templates:
+                        del custom_templates[del_title]
+                        save_custom_templates(custom_templates)
+                        st.success(f"'{del_title}' 서식이 삭제되었습니다.")
+                        st.rerun()
+
         if template_choice == "수익형 HTML 템플릿 (코드 복붙용)":
             default_template = templates.TEMPLATE_HTML
-        else:
+        elif template_choice == "수익형 블로그 규칙 (가이드라인)":
             default_template = templates.TEMPLATE_BASIC
+        else:
+            default_template = custom_templates.get(template_choice, templates.TEMPLATE_BASIC)
         
         st.divider()
         st.write("💡 **팁**: 글 생성 후에 상단 버튼으로 내용을 한층 더 다듬을 수 있습니다.")
@@ -340,9 +391,9 @@ def main():
                 """, unsafe_allow_html=True)
             else:
                 st.warning("이미지 정보가 없습니다.")
-                if st.button("🖼️ 기본 썸네일 생성"):
+                if st.button("🖼️ 이미지 다시 생성", use_container_width=True):
                     image_gen = ImageGenerator()
-                    st.session_state['image_path'] = image_gen.get_svg_thumbnail(st.session_state.get('topic', 'Blog'))
+                    st.session_state['image_path'] = image_gen.get_jpg_thumbnail(st.session_state.get('topic', 'Blog'))
                     st.session_state['generated'] = True
                     st.rerun()
 
@@ -363,15 +414,36 @@ def main():
             st.code(blog_data['content'], language='html')
 
         with tab2:
-            # Clean preview content
+            # Robust Preview using components.html to solve code-leak/rendering bugs
             preview_content = blog_data['content'].strip()
+            
+            # 1. Strip triple backticks if the AI wrapped the entire JSON/HTML
             if preview_content.startswith("```"):
                 lines = preview_content.split('\n')
                 if lines[0].strip().startswith("```"): lines = lines[1:]
                 if lines and lines[-1].strip().startswith("```"): lines = lines[:-1]
                 preview_content = "\n".join(lines)
             
-            st.markdown(preview_content, unsafe_allow_html=True)
+            # Simple sanitization or placeholder replacement if needed
+            # (Keeping it as is for transparency since user confirmed)
+            
+            # 2. Add modern CSS for Tistory-like feel
+            styled_html = f"""
+            <div style="font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; line-height: 1.7; color: #333; max-width: 100%; overflow-x: hidden;">
+                {preview_content}
+            </div>
+            <style>
+                img {{ max-width: 100%; height: auto; border-radius: 10px; margin: 20px 0; }}
+                h2, h3 {{ border-bottom: 2px solid #eee; padding-bottom: 10px; margin-top: 30px; }}
+                table {{ border-collapse: collapse; width: 100%; margin: 20px 0; }}
+                th, td {{ border: 1px solid #ddd; padding: 12px; text-align: left; }}
+                th {{ background-color: #f8f9fa; }}
+                blockquote {{ border-left: 5px solid #eee; padding-left: 20px; color: #666; font-style: italic; }}
+            </style>
+            """
+            
+            # Render in an iframe to prevent CSS leakage and solve st.markdown issues
+            components.html(styled_html, height=800, scrolling=True)
 
 if __name__ == "__main__":
     main()

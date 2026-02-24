@@ -26,6 +26,7 @@ class ImageGenerator:
         from PIL import Image, ImageDraw, ImageFont
         import io
         import base64
+        import os
         
         # 1. Setup Canvas
         size = 800
@@ -39,13 +40,26 @@ class ImageGenerator:
         if not display_text.endswith(">"):
             display_text += " >"
             
-        # 3. Dynamic Font Loading
-        font_path = r"C:\Windows\Fonts\malgun.ttf" # Windows default
-        try:
-            # Fallback if malgun is missing (though verified earlier)
-            font_size = 110 # Slightly bigger than SVG
-            font = ImageFont.truetype(font_path, font_size)
-        except Exception:
+        # 3. Robust Font Fallback (Crucial for Korean rendering)
+        possible_fonts = [
+            r"C:\Windows\Fonts\malgunbd.ttf", 
+            r"C:\Windows\Fonts\malgun.ttf", 
+            r"C:\Windows\Fonts\malgun.ttc",
+            r"C:\Windows\Fonts\gulim.ttc",
+            "malgun.ttf", "gulim.ttc", "arial.ttf"
+        ]
+        
+        font = None
+        font_size = 100
+        for f_path in possible_fonts:
+            try:
+                if os.path.exists(f_path) or not f_path.startswith("C:"):
+                    font = ImageFont.truetype(f_path, font_size)
+                    break
+            except Exception:
+                continue
+        
+        if not font:
             font = ImageFont.load_default()
             
         # 4. Word Wrap (Max 3 lines, max 8 chars per line)
@@ -53,7 +67,7 @@ class ImageGenerator:
         lines = []
         current_line = ""
         for word in words:
-            if len(current_line + word) <= 8:
+            if len(current_line + word) <= 10: # Balanced length
                 current_line += (word + " ")
             else:
                 if current_line: lines.append(current_line.strip())
@@ -66,16 +80,21 @@ class ImageGenerator:
         total_text_height = len(lines) * line_height
         start_y = (size - total_text_height) // 2
         
-        outline_color = (0, 0, 0, 40) # Subtle dark outline/shadow
-        
         for i, line in enumerate(lines):
             # Calculate centering
-            w = draw.textlength(line, font=font)
+            try:
+                # Pillow >= 10.0 method
+                left, top, right, bottom = draw.textbbox((0, 0), line, font=font)
+                w = right - left
+            except AttributeError:
+                # Older Pillow fallback
+                w = draw.textlength(line, font=font)
+                
             x = (size - w) // 2
             y = start_y + (i * line_height)
             
-            # Thick Outline (draw 8 times for full coverage)
-            outline_thickness = 4
+            # Thick Outline for readability
+            outline_thickness = 5
             for dx in range(-outline_thickness, outline_thickness + 1):
                 for dy in range(-outline_thickness, outline_thickness + 1):
                     if dx != 0 or dy != 0:
@@ -86,7 +105,7 @@ class ImageGenerator:
 
         # 6. Export to Base64 JPG
         buffered = io.BytesIO()
-        img.save(buffered, format="JPEG", quality=95)
+        img.save(buffered, format="JPEG", quality=90)
         encoded = base64.b64encode(buffered.getvalue()).decode('utf-8')
         return f"data:image/jpeg;base64,{encoded}"
 
@@ -94,7 +113,7 @@ class ImageGenerator:
         """
         Maps common Korean terms to English for stock photo relevance.
         """
-        if not text: return "nature"
+        if not text: return "lifestyle"
         text_lower = text.lower()
         for ko, en in self.COMMON_TOPICS.items():
             if ko in text_lower:
@@ -102,22 +121,22 @@ class ImageGenerator:
         # Fallback: Extract first ASCII word
         clean = "".join([c if (c.isalpha() or c == ' ') else ' ' for c in text if ord(c) < 128])
         parts = clean.split()
-        return parts[0] if parts else "modern"
+        return parts[0] if parts else "nature"
 
     def get_stock_image_url(self, title, keywords=None):
         """
         Returns a high-quality stock photo URL.
-        Switching to LoremFlickr for better reliability than Unsplash Source.
+        Using Unsplash with refined keyword logic for better relevance.
         """
         target = keywords if keywords else title
         kw = self.translate_keyword(target)
         
-        # Multiple keywords handling for LoremFlickr (comma separated)
-        clean_kw = kw.replace(" ", "")
+        # Add lifestyle/minimal anchors to ensure professional-looking stock photos
+        search_kw = f"{kw},lifestyle,nature"
         seed = random.randint(1, 1000)
         
-        # LoremFlickr is very reliable for keyword-based placeholders
-        return f"https://loremflickr.com/800/800/{clean_kw}/all?lock={seed}"
+        # Reverting to Unsplash Source with more specific query structure
+        return f"https://source.unsplash.com/featured/800x800?{urllib.parse.quote(search_kw)}&sig={seed}"
 
     def get_image_url(self, title, prompt=None, keywords=None, use_stock=False):
         """
