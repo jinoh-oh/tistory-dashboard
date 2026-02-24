@@ -18,57 +18,77 @@ class ImageGenerator:
         "부업": "side hustle", "수익": "money", "자기계발": "success"
     }
 
-    def get_svg_thumbnail(self, text):
+    def get_jpg_thumbnail(self, text):
         """
-        Generates a 100% reliable SVG thumbnail as a Data URL.
-        Features: Large bold text, big vertical spacing, and " >" symbol.
+        Generates a 800x800 JPG thumbnail using Pillow for Tistory compatibility.
+        Features high-quality Korean typography and visual polish.
         """
+        from PIL import Image, ImageDraw, ImageFont
+        import io
         import base64
         
-        # User request: Add ' >' at the end for premium look
+        # 1. Setup Canvas
+        size = 800
+        colors = ["#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#06b6d4"]
+        bg_hex = random.choice(colors)
+        img = Image.new('RGB', (size, size), color=bg_hex)
+        draw = ImageDraw.Draw(img)
+        
+        # 2. Text Preparation
         display_text = text.strip()
         if not display_text.endswith(">"):
             display_text += " >"
             
+        # 3. Dynamic Font Loading
+        font_path = r"C:\Windows\Fonts\malgun.ttf" # Windows default
+        try:
+            # Fallback if malgun is missing (though verified earlier)
+            font_size = 110 # Slightly bigger than SVG
+            font = ImageFont.truetype(font_path, font_size)
+        except Exception:
+            font = ImageFont.load_default()
+            
+        # 4. Word Wrap (Max 3 lines, max 8 chars per line)
         words = display_text.split()
         lines = []
         current_line = ""
-        
         for word in words:
-            if len(current_line + word) <= 8: # Even shorter for bigger font
+            if len(current_line + word) <= 8:
                 current_line += (word + " ")
             else:
                 if current_line: lines.append(current_line.strip())
                 current_line = word + " "
         if current_line: lines.append(current_line.strip())
-        
         lines = lines[:3]
         
-        # Vibrant colors (Tailwind palette)
-        colors = ["#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#06b6d4"]
-        bg = random.choice(colors)
+        # 5. Draw Text with Strong Outline (Premium YouTube Style)
+        line_height = 130
+        total_text_height = len(lines) * line_height
+        start_y = (size - total_text_height) // 2
         
-        # Polished Spacing: Maximize vertical air
-        line_height = 135 
-        total_height = len(lines) * line_height
-        start_y = 400 - (total_height / 2) + (line_height / 1.3)
+        outline_color = (0, 0, 0, 40) # Subtle dark outline/shadow
         
-        text_elements = ""
-        font_size = "100px" if len(lines) <= 2 else "80px"
         for i, line in enumerate(lines):
+            # Calculate centering
+            w = draw.textlength(line, font=font)
+            x = (size - w) // 2
             y = start_y + (i * line_height)
-            # Use paint-order for broad contrast
-            text_elements += f'<text x="50%" y="{y}" text-anchor="middle" fill="white" font-family="sans-serif" font-weight="900" font-size="{font_size}" style="paint-order: stroke; stroke: rgba(0,0,0,0.1); stroke-width: 6px;">{line}</text>'
             
-        svg = f"""
-        <svg width="800" height="800" viewBox="0 0 800 800" xmlns="http://www.w3.org/2000/svg">
-            <rect width="800" height="800" fill="{bg}"/>
-            {text_elements}
-        </svg>
-        """
-        
-        encoded = base64.b64encode(svg.encode('utf-8')).decode('utf-8')
-        return f"data:image/svg+xml;base64,{encoded}"
+            # Thick Outline (draw 8 times for full coverage)
+            outline_thickness = 4
+            for dx in range(-outline_thickness, outline_thickness + 1):
+                for dy in range(-outline_thickness, outline_thickness + 1):
+                    if dx != 0 or dy != 0:
+                        draw.text((x+dx, y+dy), line, fill="black", font=font)
+            
+            # Main Bold Text
+            draw.text((x, y), line, fill="white", font=font)
+
+        # 6. Export to Base64 JPG
+        buffered = io.BytesIO()
+        img.save(buffered, format="JPEG", quality=95)
+        encoded = base64.b64encode(buffered.getvalue()).decode('utf-8')
+        return f"data:image/jpeg;base64,{encoded}"
 
     def translate_keyword(self, text):
         """
@@ -87,24 +107,26 @@ class ImageGenerator:
     def get_stock_image_url(self, title, keywords=None):
         """
         Returns a high-quality stock photo URL.
-        Uses Unsplash Source with better keyword handling to avoid irrelevant images.
+        Switching to LoremFlickr for better reliability than Unsplash Source.
         """
         target = keywords if keywords else title
         kw = self.translate_keyword(target)
         
+        # Multiple keywords handling for LoremFlickr (comma separated)
+        clean_kw = kw.replace(" ", "")
         seed = random.randint(1, 1000)
-        # Unsplash Source is usually more relevant than LoremFlickr for professional blog topics
-        # Adding a topic keyword like 'professional' or 'lifestyle' helps avoid random objects
-        return f"https://source.unsplash.com/featured/800x800?{kw},blog&sig={seed}"
+        
+        # LoremFlickr is very reliable for keyword-based placeholders
+        return f"https://loremflickr.com/800/800/{clean_kw}/all?lock={seed}"
 
     def get_image_url(self, title, prompt=None, keywords=None, use_stock=False):
         """
-        Unified method. Defaults to SVG for text thumbnails.
+        Unified method.
         """
         if use_stock:
             return self.get_stock_image_url(title, keywords)
-        # We now use SVG by default for "Thumbnail" because it's 100% reliable
-        return self.get_svg_thumbnail(title)
+        # Switch to JPG by default for Tistory
+        return self.get_jpg_thumbnail(title)
 
     def generate_image(self, title, prompt=None, include_text=False):
         """

@@ -248,34 +248,43 @@ def main():
                 
                 # Keyword control for Stock Photos
                 current_kw = blog_data.get('image_keywords', 'nature')
-                new_kw = st.text_input("🖼️ 이미지 강조 키워드 (영문)", value=current_kw, help="스톡 사진 검색 시 사용될 키워드입니다. 콤마(,)로 구분하세요.")
+                # FORCE update label text to break caching
+                new_kw = st.text_input("🔍 이미지 테마 키워드 (영문 검색어)", value=current_kw, help="스톡 사진 검색 시 사용될 키워드입니다. 콤마(,)로 구분하세요.")
                 if new_kw != current_kw:
                     blog_data['image_keywords'] = new_kw
 
                 # Image Action Buttons
                 c1, c2 = st.columns(2)
                 with c1:
-                    is_custom_jpg = image_path.startswith("data:image/jpeg")
+                    is_data_url = image_path.startswith("data:image")
                     
-                    if is_custom_jpg:
-                        # For self-generated JPGs
+                    if is_data_url:
+                        # For self-generated JPGs or embedded images
                         try:
-                            header, encoded = image_path.split(",", 1)
-                            data = base64.b64decode(encoded)
-                            st.download_button(
-                                label="💾 JPG 이미지 컴퓨터에 저장",
-                                data=data,
-                                file_name=f"thumbnail_{int(time.time())}.jpg",
-                                mime="image/jpeg",
-                                use_container_width=True
-                            )
-                        except Exception:
-                            st.link_button("🔗 이미지 크게 보기", image_path, use_container_width=True)
+                            import base64
+                            parts = image_path.split(",", 1)
+                            if len(parts) == 2:
+                                data = base64.b64decode(parts[1])
+                                st.download_button(
+                                    label="💾 JPG 이미지 컴퓨터에 저장",
+                                    data=data,
+                                    file_name=f"thumbnail_{int(time.time())}.jpg",
+                                    mime="image/jpeg",
+                                    use_container_width=True
+                                )
+                            else:
+                                st.error("이미지 데이터를 해석할 수 없습니다.")
+                        except Exception as e:
+                            st.warning(f"저장 시도 중 오류: {e}")
+                            st.link_button("🔗 브라우저에서 열기", image_path, use_container_width=True)
                     else:
-                        # For stock photos (Unsplash/External JPG)
+                        # For stock photos (Unsplash/External JPG) - Be extremely robust
                         try:
-                            # Note: requests and io are imported at the top
-                            response = requests.get(image_path, timeout=10)
+                            headers = {
+                                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                            }
+                            # allow_redirects=True is default but let's be explicit
+                            response = requests.get(image_path, headers=headers, timeout=15, allow_redirects=True)
                             if response.status_code == 200:
                                 st.download_button(
                                     label="💾 JPG 이미지 컴퓨터에 저장",
@@ -285,9 +294,11 @@ def main():
                                     use_container_width=True
                                 )
                             else:
-                                st.link_button("🔗 원본 이미지 크게 보기/저장", image_path, use_container_width=True)
-                        except Exception:
-                            st.link_button("🔗 원본 이미지 크게 보기/저장", image_path, use_container_width=True)
+                                st.error(f"이미지 서버 응답 오류 ({response.status_code})")
+                                st.link_button("🔗 원본 링크로 열기 (브라우저 차단 가능)", image_path, use_container_width=True)
+                        except Exception as e:
+                            st.error(f"다운로드 연결 실패: {e}")
+                            st.link_button("🔗 원본 링크로 열기 (브라우저 차단 가능)", image_path, use_container_width=True)
                 
                 with c2:
                     if st.button("🔄 새로운 색상/배경으로 변경", type="primary", use_container_width=True):
@@ -305,7 +316,7 @@ def main():
                     if st.button("✅ 텍스트 썸네일 (기본값)", use_container_width=True):
                         image_gen = ImageGenerator()
                         display_title = blog_data.get('thumbnail_title', blog_data['title'])
-                        st.session_state['image_path'] = image_gen.get_svg_thumbnail(display_title)
+                        st.session_state['image_path'] = image_gen.get_jpg_thumbnail(display_title)
                         st.rerun()
                 
                 with f_col2:
