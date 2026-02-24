@@ -161,7 +161,10 @@ def main():
         # Sidebar Management UI
         with st.expander("🚀 서식 추가/관리"):
             new_title = st.text_input("새 서식 이름", placeholder="예: 맛집 리뷰 서식")
-            new_prompt = st.text_area("서식 프롬프트 ( {topic} 포함 필수 )", height=150, help="AI에게 전달할 상세 지시사항을 입력하세요. 주제가 들어갈 자리에 {topic}을 넣어주세요.")
+            
+            # Pre-fill from direct edit if available
+            initial_prompt = st.session_state.get('new_prompt_from_edit', "")
+            new_prompt = st.text_area("서식 프롬프트 ( {topic} 포함 필수 )", value=initial_prompt, height=150, help="AI에게 전달할 상세 지시사항을 입력하세요. 주제가 들어갈 자리에 {topic}을 넣어주세요.")
             if st.button("➕ 서식 저장", use_container_width=True):
                 if new_title and new_prompt:
                     if "{topic}" not in new_prompt:
@@ -208,8 +211,19 @@ def main():
     # Template Editor
     with st.expander("🛠️ 서식(프롬프트) 직접 수정하기", expanded=False):
         user_template = st.text_area("프롬프트 내용", value=default_template, height=300)
-
-    # Input Area
+        
+        # Persistence Logic
+        if st.button("💾 이 서식을 저장하기", use_container_width=True):
+            if template_choice in custom_templates:
+                # Update existing custom template
+                custom_templates[template_choice] = user_template
+                save_custom_templates(custom_templates)
+                st.success(f"'{template_choice}' 서식이 업데이트되었습니다.")
+                st.rerun()
+            else:
+                # Built-in template, suggest saving as new
+                st.info("기본 서식은 수정할 수 없습니다. 아래 '🚀 서식 추가/관리' 메뉴에서 새 이름으로 저장해 주세요.")
+                st.session_state['new_prompt_from_edit'] = user_template
     st.divider()
     topic = st.text_input("블로그 주제를 입력하세요", placeholder="예: 2026년 해외여행 추천지, 다이어트 식단 가이드")
     
