@@ -255,23 +255,26 @@ def main():
                 # Image Action Buttons
                 c1, c2 = st.columns(2)
                 with c1:
-                    if image_path.startswith("data:image/svg"):
-                        # For SVGs, use download button
+                    is_custom_jpg = image_path.startswith("data:image/jpeg")
+                    
+                    if is_custom_jpg:
+                        # For self-generated JPGs
                         try:
                             header, encoded = image_path.split(",", 1)
                             data = base64.b64decode(encoded)
                             st.download_button(
-                                label="💾 이미지 컴퓨터에 저장 (SVG)",
+                                label="💾 JPG 이미지 컴퓨터에 저장",
                                 data=data,
-                                file_name=f"thumbnail_{int(time.time())}.svg",
-                                mime="image/svg+xml",
+                                file_name=f"thumbnail_{int(time.time())}.jpg",
+                                mime="image/jpeg",
                                 use_container_width=True
                             )
                         except Exception:
                             st.link_button("🔗 이미지 크게 보기", image_path, use_container_width=True)
                     else:
-                        # For stock photos (Unsplash/JPG), fetch and provide direct download
+                        # For stock photos (Unsplash/External JPG)
                         try:
+                            # Note: requests and io are imported at the top
                             response = requests.get(image_path, timeout=10)
                             if response.status_code == 200:
                                 st.download_button(
@@ -290,7 +293,7 @@ def main():
                     if st.button("🔄 새로운 색상/배경으로 변경", type="primary", use_container_width=True):
                         image_gen = ImageGenerator()
                         display_title = blog_data.get('thumbnail_title', blog_data['title'])
-                        st.session_state['image_path'] = image_gen.get_svg_thumbnail(display_title)
+                        st.session_state['image_path'] = image_gen.get_jpg_thumbnail(display_title)
                         st.rerun()
 
                 # Robust Fallback Options
