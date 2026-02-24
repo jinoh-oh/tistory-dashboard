@@ -1,9 +1,38 @@
 import urllib.parse
 import random
+import os
+import requests
+import io
+import base64
 
 class ImageGenerator:
     def __init__(self, output_dir="generated_images"):
         self.output_dir = output_dir
+        self.font_dir = "fonts"
+        self.local_font_path = os.path.join(self.font_dir, "NanumGothicBold.ttf")
+        
+        # Ensure local font exists for cloud environments
+        self._ensure_font_exists()
+
+    def _ensure_font_exists(self):
+        """
+        Downloads a Korean font if not available locally or in system paths.
+        This ensures the app works on Streamlit Cloud/Linux without pre-installed fonts.
+        """
+        if not os.path.exists(self.font_dir):
+            os.makedirs(self.font_dir)
+            
+        if not os.path.exists(self.local_font_path):
+            try:
+                # Using a reliable raw link from NanumGothic GitHub or similar
+                font_url = "https://github.com/google/fonts/raw/main/ofl/nanumgothic/NanumGothic-Bold.ttf"
+                response = requests.get(font_url, timeout=10)
+                if response.status_code == 200:
+                    with open(self.local_font_path, "wb") as f:
+                        f.write(response.content)
+                    print(f"Font downloaded successfully to {self.local_font_path}")
+            except Exception as e:
+                print(f"Failed to download font: {e}")
 
     # Hardcoded mapping for common Korean blog topics to ensure relevance
     COMMON_TOPICS = {
@@ -15,16 +44,23 @@ class ImageGenerator:
         "뷰티": "beauty", "화장품": "cosmetics", "피부": "skincare",
         "it": "technology", "반도체": "tech", "스마트폰": "smartphone",
         "육아": "parenting", "아기": "baby", "교육": "education",
-        "부업": "side hustle", "수익": "money", "자기계발": "success"
+        "부업": "side hustle", "수익": "money", "자기계발": "success",
+        "수면": "sleep", "숙면": "bedroom", "불면증": "night",
+        "부종": "swelling", "붓기": "spa", "혈액순환": "blood",
+        "커피": "coffee", "카페": "cafe", "인테리어": "interior"
     }
 
     def _find_system_fonts(self):
         """
-        Dynamically finds available Korean-supporting fonts on Windows and Linux (Streamlit Cloud).
+        Dynamically finds available Korean-supporting fonts on Windows and Linux.
         """
-        import os
         import glob
         
+        # Include our local downloaded font as the absolute FIRST priority
+        found_fonts = []
+        if os.path.exists(self.local_font_path):
+            found_fonts.append(self.local_font_path)
+            
         # Paths to search based on OS
         search_dirs = []
         if os.name == 'nt': # Windows
@@ -33,7 +69,7 @@ class ImageGenerator:
             search_dirs = [
                 "/usr/share/fonts",
                 "/usr/local/share/fonts",
-                "~/.fonts"
+                os.path.expanduser("~/.fonts")
             ]
         
         patterns = [
@@ -41,9 +77,7 @@ class ImageGenerator:
             "*noto*korean*", "*noto*cjk*", "*unfonts*", "*baekmuk*"
         ]
         
-        found_fonts = []
         for d in search_dirs:
-            d = os.path.expanduser(d)
             if not os.path.exists(d): continue
             
             for p in patterns:
