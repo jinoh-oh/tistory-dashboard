@@ -36,36 +36,36 @@ class ImageGenerator:
 
     # Curated Library of verified high-quality Unsplash IDs for 100% relevance
     CURATED_STOCK = {
-        "sleep": "1541781774370-8a1d05b17ae7",  # Cozy bed
-        "bedroom": "1512499617640-42f4731dec01", # Serene bedroom
+        "sleep": "1505691722718-250393ce50d7",  # Cozy morning bed
+        "bedroom": "1586022330152-c66a0f030732", # Serene bedroom
         "night": "1519750744998-bfc048040c0c",   # Night window
-        "diet": "1490645935967-107d1e2d5160",    # Healthy salad (Fixed ID)
+        "diet": "1512621776951-a57141f2eefd",    # Healthy salad bowl (Stable)
         "healthy": "1498837167721-e011830efad3", # Fresh vegetables
-        "weight loss": "1517833115132-ec377c8d710f", # Scale/Fitness
-        "fitness": "1534438327245-c0517a1bb102",  # Running shoes/track
+        "weight loss": "1512621776951-a57141f2eefd", # Diet/Food
+        "fitness": "1486739981240-efd9fc56ea45",  # Shoes/Workout
         "workout": "1534438327245-c0517a1bb102",  # Gym
-        "stock": "1611974717521-4a43a7c1219d",    # Stock market charts
+        "stock": "1611974717136-7fa2c4d92476",    # Financial charts (Stable)
         "finance": "1579621973515-0178631c7fe3",  # Coins/Growth
-        "economy": "1459257255995-1f9999b4aef9",  # City buildings (Fixed ID)
-        "tech": "1488590527370-d803d642610e",     # Laptop/Code
+        "economy": "1459257255995-1f9999b4aef9",  # City buildings
+        "tech": "1498050108023-c5249f4df085",     # Laptop on desk (Stable)
         "smartphone": "1511702199708-8687263636b6", # Modern phone
-        "skincare": "155622857592f-b2f5606b4da8",  # Beauty/Spa
+        "skincare": "155622857592f-b2f5606b4da8",  # Spa/Skincare
         "makeup": "1522335789203-a4c020c027de",   # Cosmetics
-        "food": "1476224203461-9c3c8b9b2acc",     # Generic delicious food (Fixed ID)
+        "food": "1476224203461-9c3c8b9b2acc",     # Delicious food
         "coffee": "1495474472287-4d71bcdd2085",   # Coffee cup
         "cafe": "1509042239035-0c83d5bd737b",     # Cafe interior
-        "travel": "1469441996581-c93a958e03e1",   # Plane window/landscape
-        "tourism": "1476610182121-5a3994e77501",  # Tourist map
-        "hotel": "1566073771279-6a31s09170b",    # Luxury room (Fixed ID)
-        "parenting": "1510333302158-df3f3760200e", # Parent and child (Fixed ID)
-        "baby": "1502441739563-36c24f3b7s4d",     # Cute baby (Fixed ID)
-        "money": "1589753191714-3d12c1456b3a",    # Dollars (Fixed ID)
-        "success": "1633613216315-da1d4s9c1a2b",  # Mountain peak (Fixed ID)
-        "interior": "1616489959146-da3b9c1a2b3d", # Modern room (Fixed ID)
-        "medicine": "1584362946141-da1d4s9c1a2b", # Pills/Health (Fixed ID)
-        "swelling": "1519415943484-da3b9c1a2b3d", # Feet/Health (Fixed ID)
-        "doctor": "15329389110d9-da1d4s9c1a2b",  # Stethoscope (Fixed ID)
-        "salt": "1554160100-83ea0e63789d",        # Salt/Seasoning (New)
+        "travel": "1469441996581-c93a958e03e1",   # Plane window
+        "tourism": "1476610182121-5a3994e77501",  # Map/Travel
+        "hotel": "1566073771279-3096c07aa08d",    # Hotel room
+        "parenting": "1510333302158-df3f3760200e", # Parent and child
+        "baby": "1602444384483-49178872733d",     # Cute baby (Stable)
+        "money": "1589753191714-3d12c1456b3a",    # Cash
+        "success": "1633613216315-da1d4b9c1a2b",  # Peak
+        "interior": "1586023492125-27b2c045efd7", # Modern living room (Stable)
+        "medicine": "1584362946141-da1d4b9c1a2b", # Health/Pills
+        "swelling": "1519415943484-da3b9c1a2b3d", # Health
+        "doctor": "15329389110d9-da1d4b9c1a2b",  # Health
+        "salt": "1535473895227-eb0d40e071ee",     # Salt/Seasoning (Stable)
     }
 
     # Hardcoded mapping for common Korean blog topics to ensure relevance
@@ -82,7 +82,7 @@ class ImageGenerator:
         "수면": "sleep", "숙면": "bedroom", "불면증": "night",
         "부종": "swelling", "붓기": "swelling", "혈액순환": "medicine",
         "커피": "coffee", "카페": "cafe", "인테리어": "interior",
-        "저염식": "salt", "나트륨": "salt", "소금": "salt"
+        "저염식": "salt", "나트륨": "salt", "소금": "salt", "건강식": "diet"
     }
 
     def _find_system_fonts(self):
@@ -128,94 +128,108 @@ class ImageGenerator:
 
     def get_jpg_thumbnail(self, text):
         """
-        Generates a 800x800 JPG thumbnail using Pillow for Tistory compatibility.
-        Works across Windows and Linux (Streamlit Cloud).
+        Generates a premium 800x800 YouTube-style JPG thumbnail.
+        Features: Multi-color text, heavy outlines, top badge callout.
         """
-        from PIL import Image, ImageDraw, ImageFont
+        from PIL import Image, ImageDraw, ImageFont, ImageFilter
         import io
         import base64
         import os
+        import random
         
         # 1. Setup Canvas
         size = 800
-        # Vibrant colors that work well with white text
-        colors = ["#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#06b6d4", "#f43f5e", "#6366f1"]
-        bg_hex = random.choice(colors)
+        # Premium vibrant palettes (Deep Blue, Red, Dark Grey, Purple)
+        bg_colors = ["#0052cc", "#d32f2f", "#1a1a1b", "#4527a0", "#1b5e20", "#e65100"]
+        bg_hex = random.choice(bg_colors)
         img = Image.new('RGB', (size, size), color=bg_hex)
         draw = ImageDraw.Draw(img)
         
-        # 2. Text Preparation
-        display_text = text.replace(">", "").strip()
-        # [REMOVED] decorative '>' as per user request
-            
-        # 3. Smart Font Discovery
-        font_paths = self._find_system_fonts()
+        # 2. Text Preparation & Smart Cleaning
+        clean_text = text.replace(">", "").replace("\"", "").replace("'", "").strip()
         
+        # 3. Font Discovery
+        font_paths = self._find_system_fonts()
         font = None
-        font_size = 110 # Premium large size
+        font_size = 145 # Maximum impact size
         
         for f_path in font_paths:
             try:
-                font = ImageFont.truetype(f_path, font_size)
-                break
-            except Exception:
-                continue
+                # Prioritize Bold versions for that YouTube look
+                if any(x in f_path.lower() for x in ['bold', 'bd', 'eb']):
+                    font = ImageFont.truetype(f_path, font_size)
+                    badge_font = ImageFont.truetype(f_path, 45)
+                    break
+            except: continue
         
-        if not font:
-            # Last ditch effort for Linux (Streamlit Cloud)
-            linux_fallbacks = [
-                "/usr/share/fonts/truetype/nanum/NanumGothicBold.ttf",
-                "/usr/share/fonts/truetype/noto/NotoSansCJK-Bold.ttc"
-            ]
-            for lf in linux_fallbacks:
-                try:
-                    if os.path.exists(lf):
-                        font = ImageFont.truetype(lf, font_size)
-                        break
-                except: continue
-        
+        if not font and font_paths:
+            font = ImageFont.truetype(font_paths[0], font_size)
+            badge_font = ImageFont.truetype(font_paths[0], 45)
+            
         if not font:
             font = ImageFont.load_default()
+            badge_font = ImageFont.load_default()
             
-        # 4. Word Wrap (Max 3 lines, tight wrap)
-        words = display_text.split()
+        # 4. Word Wrap & Layout
+        words = clean_text.split()
         lines = []
         current_line = ""
         for word in words:
-            if len(current_line + word) <= 7: 
+            if len(current_line + word) <= 6: # Ultra tight wrap for big text
                 current_line += (word + " ")
             else:
                 if current_line: lines.append(current_line.strip())
                 current_line = word + " "
         if current_line: lines.append(current_line.strip())
-        lines = lines[:3]
+        lines = lines[:3] # Max 3 lines for impact
         
-        # 5. Draw Text with "Glow" Outline (Premium YouTube Style)
-        line_height = 145
+        # 5. Draw Top Badge (Call to Action)
+        badge_options = ["핵심 요약!", "위험 신호?", "깜짝 놀랄", "거의 모르는", "초간단 해결", "전문가 추천"]
+        badge_text = random.choice(badge_options)
+        
+        # Badge Background (Yellow/Orange bubble)
+        badge_w = 280
+        badge_h = 70
+        badge_x = (size - badge_w) // 2
+        badge_y = 100
+        draw.rounded_rectangle([badge_x, badge_y, badge_x + badge_w, badge_y + badge_h], radius=35, fill="#fdd835", outline="#111111", width=3)
+        
+        # Badge Text (Black)
+        try:
+            bw, bh = draw.textsize(badge_text, font=badge_font) if hasattr(draw, 'textsize') else draw.textbbox((0,0), badge_text, font=badge_font)[2:4]
+            draw.text(((size-bw)//2, badge_y + (badge_h-bh)//2 - 5), badge_text, fill="#111111", font=badge_font)
+        except: pass
+
+        # 6. Draw Main Bold Text with Multi-Layer Shadow (Heavy Stroke)
+        line_height = 175
         total_text_height = len(lines) * line_height
-        start_y = (size - total_text_height) // 2
+        start_y = (size - total_text_height) // 2 + 50 # Shift down for badge
         
         for i, line in enumerate(lines):
             try:
-                left, top, right, bottom = draw.textbbox((0, 0), line, font=font)
-                w = right - left
-            except AttributeError:
-                w = draw.textlength(line, font=font)
+                # Get text width
+                if hasattr(draw, 'textbbox'):
+                    l, t, r, b = draw.textbbox((0, 0), line, font=font)
+                    w = r - l
+                else: w = draw.textsize(line, font=font)[0]
+            except: w = 400
                 
             x = (size - w) // 2
             y = start_y + (i * line_height)
             
-            # Ultra Thick Shadow for maximum legibility
-            for dx in range(-6, 7, 2):
-                for dy in range(-6, 7, 2):
-                    draw.text((x+dx, y+dy), line, fill="#111111", font=font)
+            # 6a. Multi-Layer Ultra Thick Stroke (YouTube Style)
+            for dist in [6, 4, 2]:
+                for dx in range(-dist, dist+1, 2):
+                    for dy in range(-dist, dist+1, 2):
+                        draw.text((x+dx, y+dy), line, fill="#000000", font=font)
             
-            # Main Bold Text
-            draw.text((x, y), line, fill="white", font=font)
+            # 6b. Main Text (Alternating Colors: White and Yellow)
+            main_color = "white" if i % 2 == 0 else "#fff176" 
+            draw.text((x, y), line, fill=main_color, font=font)
 
-        # 6. Export to Base64 JPG
+        # 7. Export to Base64 JPG
         buffered = io.BytesIO()
-        img.save(buffered, format="JPEG", quality=90)
+        img.save(buffered, format="JPEG", quality=92)
         encoded = base64.b64encode(buffered.getvalue()).decode('utf-8')
         return f"data:image/jpeg;base64,{encoded}"
 
