@@ -138,20 +138,36 @@ def main():
         st.divider()
         st.header("📝 서식 선택")
         
-        # Load custom templates
+        # Cloud Sync Initialization
+        from firebase_sync import FirebaseSync
+        fb_sync = FirebaseSync()
+
+        # Load custom templates (Local + Cloud Sync)
         CUSTOM_TEMPLATES_FILE = "custom_templates.json"
+        
         def load_custom_templates():
+            # 1. Start with local templates
+            templates = {}
             if os.path.exists(CUSTOM_TEMPLATES_FILE):
                 with open(CUSTOM_TEMPLATES_FILE, "r", encoding="utf-8") as f:
-                    try:
-                        return json.load(f)
-                    except:
-                        return {}
-            return {}
+                    try: templates = json.load(f)
+                    except: templates = {}
+            
+            # 2. Sync with Firebase (Cloud priority)
+            cloud_templates = fb_sync.fetch_templates()
+            if cloud_templates is not None:
+                # Merge: cloud templates override local ones with the same name
+                templates.update(cloud_templates)
+            
+            return templates
 
         def save_custom_templates(templates_dict):
+            # 1. Save locally
             with open(CUSTOM_TEMPLATES_FILE, "w", encoding="utf-8") as f:
                 json.dump(templates_dict, f, ensure_ascii=False, indent=4)
+            
+            # 2. Save to Firebase
+            fb_sync.save_templates(templates_dict)
 
         custom_templates = load_custom_templates()
         
@@ -203,6 +219,23 @@ def main():
 분량: 매우 길게 작성"""
             st.code(guide_example, language="text")
             st.caption("⚠️ {topic} 이 반드시 포함되어야 합니다.")
+            
+            with st.expander("🔑 클라우드 저장 설정 (Firebase)"):
+                st.markdown("""
+                ### ☁️ 서식 영구 저장 방법
+                Streamlit Cloud 환경에서는 앱이 재부팅될 때 파일이 지워집니다. 아래 설정을 완료하면 서식이 **영구적으로 보존**됩니다.
+                
+                1. [Firebase Console](https://console.firebase.google.com/)에서 프로젝트 생성
+                2. **Project Settings > Service accounts** 로 이동
+                3. **Generate new private key** 클릭하여 JSON 파일 저장
+                4. 저장한 JSON 파일의 내용을 복사
+                5. Streamlit Cloud의 **Manage App > Secrets** 메뉴에 아래와 같이 입력:
+                ```toml
+                firebase_key = '''
+                { 여기에 복사한 JSON 내용 붙여넣기 }
+                '''
+                ```
+                """)
 
         if template_choice == "수익형 HTML 템플릿 (코드 복붙용)":
             default_template = templates.TEMPLATE_HTML
