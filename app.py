@@ -141,6 +141,8 @@ def main():
         # Cloud Sync Initialization
         from firebase_sync import FirebaseSync
         fb_sync = FirebaseSync()
+        if fb_sync.db:
+            st.sidebar.success("📊 Firebase 클라우드 동기화 활성")
 
         # Load custom templates (Local + Cloud Sync)
         CUSTOM_TEMPLATES_FILE = "custom_templates.json"
