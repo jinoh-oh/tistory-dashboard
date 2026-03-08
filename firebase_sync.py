@@ -32,8 +32,9 @@ class FirebaseSync:
             doc_ref = self.db.collection("blog_generator").document("custom_templates")
             doc = doc_ref.get()
             if doc.exists:
-                return doc.to_dict().get("templates", {})
-            return {}
+                data = doc.to_dict().get("templates", {})
+                return data if data else None  # 빈 dict는 None으로 처리해 로컬 데이터 보존
+            return None  # 문서 없으면 None → 로컬 데이터 우선 사용
         except Exception as e:
             st.warning(f"⚠️ 클라우드 데이터를 가져오는 중 오류가 발생했습니다: {e}")
             return None

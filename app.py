@@ -148,20 +148,21 @@ def main():
         CUSTOM_TEMPLATES_FILE = "custom_templates.json"
         
         def load_custom_templates():
-            # 1. Start with local templates
-            templates = {}
+            # 1. Start with local templates (로컬이 기준)
+            local_templates = {}
             if os.path.exists(CUSTOM_TEMPLATES_FILE):
                 with open(CUSTOM_TEMPLATES_FILE, "r", encoding="utf-8") as f:
-                    try: templates = json.load(f)
-                    except: templates = {}
+                    try: local_templates = json.load(f)
+                    except: local_templates = {}
             
-            # 2. Sync with Firebase (Cloud priority)
+            # 2. Sync with Firebase (클라우드에만 있는 서식을 로컬에 추가, 로컬 서식은 덮어쓰지 않음)
             cloud_templates = fb_sync.fetch_templates()
-            if cloud_templates is not None:
-                # Merge: cloud templates override local ones with the same name
-                templates.update(cloud_templates)
+            if cloud_templates:
+                for name, prompt in cloud_templates.items():
+                    if name not in local_templates:  # 로컬에 없는 것만 추가
+                        local_templates[name] = prompt
             
-            return templates
+            return local_templates
 
         def save_custom_templates(templates_dict):
             # 1. Save locally
