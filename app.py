@@ -20,6 +20,19 @@ st.set_page_config(
     layout="wide"
 )
 
+def pretty_print_html(html_content):
+    """
+    HTML 코드를 줄바꿈해서 읽기 좋게 만들어주는 함수.
+    각 태그 앞에 개행을 삽입하고, 들여쓰기를 적용합니다.
+    """
+    # 태그 앞에 줄바꿈 삽입
+    formatted = re.sub(r'(<)', r'\n\1', html_content)
+    # 닫는 태그 뒤에도 줄바꿈
+    formatted = re.sub(r'(>)', r'\1\n', formatted)
+    # 연속된 빈 줄 제거
+    formatted = re.sub(r'\n{3,}', '\n\n', formatted)
+    return formatted.strip()
+
 def get_word_count_details(html_content):
     """
     Returns a dictionary with various word count details.
@@ -496,7 +509,7 @@ def main():
         
         with tab1:
             st.markdown("아래 코드를 복사해서 티스토리 에디터의 **HTML 모드**에 붙여넣으세요.")
-            st.code(blog_data['content'], language='html')
+            st.code(pretty_print_html(blog_data['content']), language='html')
 
         with tab2:
             # Robust Preview using components.html to solve code-leak/rendering bugs
